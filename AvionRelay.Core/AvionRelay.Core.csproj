@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Features\Acknowledgments\" />
+      <Folder Include="Features\Handlers\" />
+      <Folder Include="Features\MessageHubs\" />
+      <Folder Include="Features\Packages\" />
+      <Folder Include="Services\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="HelpfulTypesAndExtensions" Version="1.6.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="AvionRelay.Core.csproj.DotSettings" />
+    </ItemGroup>
+
+</Project>
