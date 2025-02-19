@@ -8,19 +8,26 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Acknowledgments\" />
-      <Folder Include="Features\Handlers\" />
-      <Folder Include="Features\MessageHubs\" />
-      <Folder Include="Features\Packages\" />
-      <Folder Include="Services\" />
+      <Folder Include="Features\Acknowledgments\Blueprints\" />
+      <Folder Include="Features\Acknowledgments\Interfaces\" />
+      <Folder Include="Features\Dispatchers\Blueprints\" />
+      <Folder Include="Features\Dispatchers\Interfaces\" />
+      <Folder Include="Features\Handlers\Blueprints\" />
+      <Folder Include="Features\Handlers\Interfaces\" />
+      <Folder Include="Features\Subscriptions\Blueprints\" />
+      <Folder Include="Features\Subscriptions\Interfaces\" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="HelpfulTypesAndExtensions" Version="1.6.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="AvionRelay.Core.csproj.DotSettings" />
+      <None Remove="Services\.keep" />
+      <None Remove="Features\.keep" />
+      <None Remove="Shared\.keep" />
     </ItemGroup>
 
 </Project>

@@ -5,7 +5,7 @@
 /// The Higher the value, the higher the priority. <br/>
 /// Higher priority messages are processed before lower priority messages.
 /// </summary>
-public enum Priority
+public enum MessagePriority
 {
     Lowest = 0,
     Low = 1,

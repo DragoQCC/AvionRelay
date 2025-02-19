@@ -3,7 +3,7 @@
 /// <summary>
 /// Base interface for all message types within AvionRelay.
 /// </summary>
-public interface IMessage
+public interface IAvionRelayMessage
 {
     /// <summary>
     /// Unique identifier for this message instance.

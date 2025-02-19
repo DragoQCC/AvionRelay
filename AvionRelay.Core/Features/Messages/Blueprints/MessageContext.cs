@@ -19,7 +19,7 @@ public class MessageContext
     /// <summary>
     /// Priority of the message for pipeline decisions, scheduling, etc.
     /// </summary>
-    public Priority Priority { get; set; }
+    public MessagePriority Priority { get; set; }
 
     /// <summary>
     /// Optional cancellation token (if you want to support message cancellation).
