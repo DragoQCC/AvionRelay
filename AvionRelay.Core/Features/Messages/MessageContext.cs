@@ -25,6 +25,4 @@ public class MessageContext
     /// Optional cancellation token (if you want to support message cancellation).
     /// </summary>
     public CancellationToken CancellationToken { get; set; }
-
-    // You can add more fields for things like headers, tracing data, etc.
 }

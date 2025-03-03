@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents a message that requires one or more responses (e.g., a status check or data request).
 /// </summary>
-public interface IInspection : IAvionRelayMessage
+public abstract class Inspection : AvionRelayMessageBase
 {
     
 }

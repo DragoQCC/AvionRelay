@@ -15,6 +15,9 @@
 
     <ItemGroup>
       <None Remove="AvionRelay.External.Transports.SignalR.csproj.DotSettings" />
+      <None Remove="Shared\.keep" />
+      <None Remove="Infrastructure\.keep" />
+      <None Remove="Features\.keep" />
     </ItemGroup>
 
 </Project>

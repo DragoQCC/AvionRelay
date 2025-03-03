@@ -8,14 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Acknowledgments\Blueprints\" />
-      <Folder Include="Features\Acknowledgments\Interfaces\" />
-      <Folder Include="Features\Dispatchers\Blueprints\" />
-      <Folder Include="Features\Dispatchers\Interfaces\" />
-      <Folder Include="Features\Handlers\Blueprints\" />
-      <Folder Include="Features\Handlers\Interfaces\" />
-      <Folder Include="Features\Subscriptions\Blueprints\" />
-      <Folder Include="Features\Subscriptions\Interfaces\" />
+      <Folder Include="Features\Acknowledgments\" />
+      <Folder Include="Features\Dispatchers\" />
+      <Folder Include="Features\Handlers\" />
+      <Folder Include="Features\Messages\Models\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -28,6 +24,14 @@
       <None Remove="Services\.keep" />
       <None Remove="Features\.keep" />
       <None Remove="Shared\.keep" />
+      <None Remove="Features\Dispatchers\Interfaces\.keep" />
+      <None Remove="Features\Acknowledgments\Blueprints\.keep" />
+      <None Remove="Features\Acknowledgments\Interfaces\.keep" />
+      <None Remove="Features\Dispatchers\Blueprints\.keep" />
+      <None Remove="Features\Handlers\Blueprints\.keep" />
+      <None Remove="Features\Handlers\Interfaces\.keep" />
+      <None Remove="Features\Subscriptions\Blueprints\.keep" />
+      <None Remove="Features\Subscriptions\Interfaces\.keep" />
     </ItemGroup>
 
 </Project>
