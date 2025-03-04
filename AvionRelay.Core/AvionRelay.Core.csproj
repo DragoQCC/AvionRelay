@@ -8,10 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Acknowledgments\" />
-      <Folder Include="Features\Dispatchers\" />
       <Folder Include="Features\Handlers\" />
-      <Folder Include="Features\Messages\Models\" />
     </ItemGroup>
 
     <ItemGroup>

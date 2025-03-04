@@ -1,5 +1,3 @@
-using AvionRelay.Core.Messages.Contracts;
-
 namespace AvionRelay.Core.Messages;
 
 public abstract class AvionRelayMessageBase : IAvionRelayMessage

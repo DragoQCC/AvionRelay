@@ -1,4 +1,4 @@
-﻿namespace AvionRelay.Core.Messages.Contracts;
+﻿namespace AvionRelay.Core.Messages;
 
 /// <summary>
 /// Base interface for all message types within AvionRelay.
