@@ -1,6 +1,4 @@
-﻿
-
-namespace AvionRelay.Core.Messages;
+﻿namespace AvionRelay.Core.Messages;
 
 using RetryCount = (int current, int max);
 
@@ -36,15 +34,8 @@ public class MessageContext
     public bool IsCancelled { get; internal set; }
 
     /// <summary>
-    /// Indicates whether the message has been acknowledged by the receiver.
-    /// </summary>
-    public bool IsAcknowledged { get; internal set; }
-
-    /// <summary>
     /// Represents the retry count for a message, including the current retry attempt and the maximum allowed retries.
     /// </summary>
     public RetryCount RetryCount { get; set; } = new RetryCount(0, 1);
     
-    
-    internal void Acknowledge() => IsAcknowledged = true;
 }

@@ -8,12 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Handlers\" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="HelpfulTypesAndExtensions" Version="1.6.2" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
+      <PackageReference Include="HelpfulTypesAndExtensions" Version="1.7.0" />
+      <PackageReference Include="IntercomEventing" Version="1.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
     </ItemGroup>
 
     <ItemGroup>

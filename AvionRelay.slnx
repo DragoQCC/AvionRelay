@@ -8,5 +8,6 @@
   <Folder Name="/Tests/">
     <Project Path="AvionRelay.Tests.Integration\AvionRelay.Tests.Integration.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.Tests.Unit\AvionRelay.Tests.Unit.csproj" Type="Classic C#" />
+    <Project Path="ConsoleExample\ConsoleExample.csproj" Type="Classic C#" />
   </Folder>
 </Solution>
