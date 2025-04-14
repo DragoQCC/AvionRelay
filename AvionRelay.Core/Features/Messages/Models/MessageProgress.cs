@@ -7,6 +7,8 @@ public sealed class MessageProgress
 {
     internal MessageState? State { get; set; }
 
+    
+
     public MessageProgress(MessageState state)
     {
         ChangeStateTo(state);
@@ -20,5 +22,9 @@ public sealed class MessageProgress
         State?.OnEnter();
     }
     
+    public bool IsFinalized => State is ResponseReceived or Failed;
+    
+    
+    public bool IsInState<T>() where T : MessageState => State is T;
 }
 
