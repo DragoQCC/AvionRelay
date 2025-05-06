@@ -28,4 +28,8 @@
       <None Remove="Features\Subscriptions\Interfaces\.keep" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Features\Handlers\Models\" />
+    </ItemGroup>
+
 </Project>

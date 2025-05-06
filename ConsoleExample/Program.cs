@@ -1,4 +1,12 @@
-﻿using AvionRelay.Core.Messages.MessageTypes;
+﻿using AvionRelay.Core;
+using AvionRelay.Core.Handlers;
+using AvionRelay.Core.Handlers.StateProcessors;
+using AvionRelay.Core.Messages;
+using AvionRelay.Core.Messages.MessageTypes;
+using AvionRelay.Core.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace ConsoleExample;
 
@@ -6,16 +14,25 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        CreateUserCommand createUserCommand = new();
-        createUserCommand.Acknowledge();
-        await createUserCommand.Respond(new CreatedUserResponse("123"));
-        Console.WriteLine($"Was Acknowledged: " + createUserCommand.IsAcknowledged);
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+        Setup(builder.Services);
+        IHost host = builder.Build();
+        await host.StartAsync();
+        
+        //await messageServiceExample.RunExample();
+        
+        await InternalMessageBrokerExample.RunExample();
+        
+        await host.WaitForShutdownAsync();
     }
-}
 
-public record CreatedUserResponse(string UserId);
-
-public class CreateUserCommand : Command<CreatedUserResponse>
-{
-    
+    static void Setup(IServiceCollection services)
+    {
+        
+        // Add logging
+        services.AddLogging(builder => builder.AddConsole());
+        
+        // Add the message processing system
+        services.AddAvionRelayCore();
+    }
 }

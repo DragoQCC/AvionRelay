@@ -21,7 +21,7 @@ public class MessageContext
     /// <summary>
     /// Priority of the message for pipeline decisions, scheduling, etc.
     /// </summary>
-    public MessagePriority Priority { get; internal set; } = MessagePriority.Normal;
+    public MessagePriority Priority { get; set; } = MessagePriority.Normal;
 
     /// <summary>
     /// Optional cancellation token (if you want to support message cancellation).
@@ -38,4 +38,9 @@ public class MessageContext
     /// </summary>
     public RetryCount RetryCount { get; set; } = new RetryCount(0, 1);
     
+    
+    public void SetPriority(MessagePriority priority)
+    {
+        Priority = priority;
+    }
 }

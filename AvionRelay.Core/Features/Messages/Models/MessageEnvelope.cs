@@ -25,6 +25,4 @@ public class MessageEnvelope<T> where T : AvionRelayMessageBase
         Sender = sender;
         Receivers = [ receiver ];
     }
-    
-    
 }
