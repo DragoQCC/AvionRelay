@@ -2,33 +2,26 @@
 
 namespace AvionRelay.Core.Messages.MessageTypes;
 
+
 /// <summary>
 /// Represents a request from one sender to multiple receivers. (e.g., a status check or data request) <br/>
 /// One-to-many, should be acknowledged, should respond.
 /// </summary>
-public abstract class Inspection<TResponse> : AvionRelayMessageBase, IRespond<TResponse>, IAcknowledge, IMultiReceiver
+public abstract record Inspection<TResponse> : AvionRelayMessage, IRespond<TResponse>, IMultiReceiver
 {
-    /// <inheritdoc />
-    bool IAcknowledge.IsAcknowledged { get; set; }
-
-    /// <inheritdoc />
-    public List<MessageReceiver> Receivers { get; }
-    
-    public bool IsAcknowledged
+    protected Inspection()
     {
-        get => ((IAcknowledge)this).IsAcknowledged;
-        internal set => ((IAcknowledge)this).IsAcknowledged = value;
-    }
+        AllowedStates = new List<MessageState>
+        {
+            new MessageState.Created(),
+            new MessageState.Sent(),
+            new MessageState.Received(),
+            new MessageState.Processing(),
+            new MessageState.Responded(),
+            new FinalizedMessageState.ResponseReceived(),
+            new FinalizedMessageState.Failed(),
+        };
 
-    /// <inheritdoc />
-    public void Acknowledge()
-    {
-        IsAcknowledged = true;
+        Metadata.BaseMessageType = BaseMessageType.Inspection;
     }
-
-    /// <inheritdoc />
-    public async Task Respond(TResponse response)
-    {
-    }
-    
 }

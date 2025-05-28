@@ -1,6 +1,9 @@
-﻿namespace AvionRelay.Core.Messages;
+﻿using System.ComponentModel.DataAnnotations;
+using AvionRelay.Core.Dispatchers;
 
-using RetryCount = (int current, int max);
+namespace AvionRelay.Core.Messages;
+
+
 
 /// <summary>
 /// A container for shared metadata, correlation info, 
@@ -9,14 +12,25 @@ using RetryCount = (int current, int max);
 public class MessageContext
 {
     /// <summary>
-    /// A correlation ID that ties related messages or operations together.
+    /// The ID for this message instance
     /// </summary>
-    public Guid CorrelationId { get; } = Guid.NewGuid();
-
+    public Guid MessageId { get; } = Guid.CreateVersion7();
+    
     /// <summary>
-    /// Indicates the time at which the context was created/attached.
+    /// The time in UTC that the message instance was created
     /// </summary>
-    public DateTimeOffset ContextCreatedAt { get; } = DateTime.UtcNow;
+    public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
+    
+    /// <summary>
+    /// For Commands, Alerts this list will always contain 1 item. <br/>
+    /// For Inspections and Notifications, this list will contain 1 or more items.
+    /// </summary>
+    public List<Acknowledgement> Acknowledgements { get; } = new();
+    
+    /// <summary>
+    /// The current state of the message used to track its progress
+    /// </summary>
+    public MessageState State { get; internal set; } = new MessageState.Created();
 
     /// <summary>
     /// Priority of the message for pipeline decisions, scheduling, etc.
@@ -36,11 +50,24 @@ public class MessageContext
     /// <summary>
     /// Represents the retry count for a message, including the current retry attempt and the maximum allowed retries.
     /// </summary>
-    public RetryCount RetryCount { get; set; } = new RetryCount(0, 1);
+    public int RetryCount { get; internal set; }
     
+    /// <summary>
+    /// Informs the system of the base type for the message. Ex. Command, Notification, Alert, Inspection
+    /// </summary>
+    public BaseMessageType BaseMessageType { get; internal set; }
+}
+
+
+public record Acknowledgement
+{
+    public Guid MessageId { get; init; }
+    public MessageReceiver Acknowledger { get; init; }
+    public DateTimeOffset AcknowledgedAt { get; init; } = DateTimeOffset.UtcNow;
     
-    public void SetPriority(MessagePriority priority)
+    public Acknowledgement(Guid messageId, MessageReceiver acknowledger)
     {
-        Priority = priority;
+        MessageId = messageId;
+        Acknowledger = acknowledger;
     }
 }

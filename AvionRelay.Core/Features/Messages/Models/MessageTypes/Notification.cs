@@ -6,25 +6,19 @@ namespace AvionRelay.Core.Messages.MessageTypes;
 /// Represents a notification broadcast <br/>
 /// One-to-many, should be acknowledged, no response required.
 /// </summary>
-public abstract class Notification : AvionRelayMessageBase, IAcknowledge, IMultiReceiver
+public abstract record Notification : AvionRelayMessage, IAcknowledge, IMultiReceiver
 {
-    /// <inheritdoc />
-    public List<MessageReceiver> Receivers { get; }
-    
-    /// <inheritdoc />
-    bool IAcknowledge.IsAcknowledged { get; set; }
-
-    public bool IsAcknowledged
+    protected Notification()
     {
-        get => ((IAcknowledge)this).IsAcknowledged;
-        internal set => ((IAcknowledge)this).IsAcknowledged = value;
+        AllowedStates = new List<MessageState>
+        {
+            new MessageState.Created(),
+            new MessageState.Sent(),
+            new MessageState.Received(),
+            new MessageState.Processing(),
+            new FinalizedMessageState.Failed(),
+            new FinalizedMessageState.AcknowledgementReceived()
+        };
+        Metadata.BaseMessageType = BaseMessageType.Notification;
     }
-
-    /// <inheritdoc />
-    public void Acknowledge()
-    {
-        IsAcknowledged = true;
-    }
-
-   
 }

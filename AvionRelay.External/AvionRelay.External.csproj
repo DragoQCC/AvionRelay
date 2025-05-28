@@ -8,16 +8,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Features\" />
-      <Folder Include="Infrastructure\" />
-      <Folder Include="Shared\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Remove="AvionRelay.External.csproj.DotSettings" />
       <None Remove="Shared\.keep" />
       <None Remove="Infrastructure\.keep" />
       <None Remove="Features\.keep" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="IntercomEventing" Version="1.0.0" />
+      <PackageReference Include="SQLiteNetExtensions.Modern" Version="2.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
     </ItemGroup>
 
 </Project>

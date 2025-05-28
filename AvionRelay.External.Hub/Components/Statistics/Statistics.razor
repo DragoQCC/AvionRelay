@@ -1,0 +1,212 @@
+﻿@* Pages/Statistics.razor *@
+@page "/statistics"
+@inject TransportMonitorAggregator TransportMonitorAggregator
+@using AvionRelay.External.Hub.Features.Transports
+@using AvionRelay.External.Hub.Services
+@using MudBlazor
+@implements IDisposable
+
+<PageTitle>Statistics - AvionRelay Hub</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Transport Statistics</MudText>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-4">Overall Statistics</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="0">
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2">Total Connections</MudText>
+                            <MudText Typo="Typo.h4" Color="Color.Primary">@_aggregatedStats.TotalActiveConnections</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="0">
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2">Messages Received</MudText>
+                            <MudText Typo="Typo.h4">@_aggregatedStats.TotalMessagesReceived.ToString("N0")</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="0">
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2">Data Received</MudText>
+                            <MudText Typo="Typo.h4">@FormatBytes(_aggregatedStats.TotalBytesReceived)</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="0">
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2">Active Transports</MudText>
+                            <MudText Typo="Typo.h4" Color="Color.Success">@_aggregatedStats.TransportStatistics.Count</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-4">Transport Distribution</MudText>
+            <MudChart ChartType="ChartType.Pie" ChartSeries="@_transportPieSeries" 
+                     ChartOptions="@_pieChartOptions" Height="300px" />
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-4">Message Types</MudText>
+            <MudChart ChartType="ChartType.Bar" ChartSeries="@_messageTypeBarSeries" 
+                     XAxisLabels="@_messageTypeLabels" ChartOptions="@_barChartOptions" Height="300px" />
+        </MudPaper>
+    </MudItem>
+    
+    @foreach (var (transportType, stats) in _aggregatedStats.TransportStatistics)
+    {
+        <MudItem xs="12">
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="@($"{transportType} Transport Details")" 
+                                   Icon="@GetTransportIcon(transportType)">
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudField Label="Active Connections" Variant="Variant.Text">
+                                @stats.ActiveConnections
+                            </MudField>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudField Label="Messages Received" Variant="Variant.Text">
+                                @stats.TotalMessagesReceived.ToString("N0")
+                            </MudField>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudField Label="Messages Sent" Variant="Variant.Text">
+                                @stats.TotalMessagesSent.ToString("N0")
+                            </MudField>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudField Label="Uptime" Variant="Variant.Text">
+                                @FormatUptime(DateTime.UtcNow - stats.StartTime)
+                            </MudField>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudSimpleTable Hover="true" Dense="true">
+                                <thead>
+                                    <tr>
+                                        <th>Message Type</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var (messageType, count) in stats.MessageTypeCounts.OrderByDescending(x => x.Value))
+                                    {
+                                        <tr>
+                                            <td>@messageType</td>
+                                            <td>@count.ToString("N0")</td>
+                                            <td>@((count * 100.0 / stats.TotalMessagesReceived).ToString("F1"))%</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private AggregatedStatistics _aggregatedStats = new();
+    private Timer? _refreshTimer;
+    
+    private List<ChartSeries> _transportPieSeries = new();
+    private ChartOptions _pieChartOptions = new() { ShowLegend = false };
+    
+    private List<ChartSeries> _messageTypeBarSeries = new();
+    private string[] _messageTypeLabels = Array.Empty<string>();
+    private ChartOptions _barChartOptions = new() { YAxisFormat = "N0" };
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatistics();
+        _refreshTimer = new Timer(async _ => await InvokeAsync(LoadStatistics), 
+            null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+    
+    private async Task LoadStatistics()
+    {
+        _aggregatedStats = await TransportMonitorAggregator.GetAggregatedStatisticsAsync();
+        UpdateCharts();
+        StateHasChanged();
+    }
+    
+    private void UpdateCharts()
+    {
+        // Transport distribution pie chart
+        _transportPieSeries = _aggregatedStats.TransportStatistics
+            .Select(kvp => new ChartSeries
+            {
+                Name = kvp.Key.ToString(),
+                Data = new double[] { kvp.Value.ActiveConnections }
+            })
+            .ToList();
+            
+        // Message types bar chart
+        var topMessageTypes = _aggregatedStats.MessageTypeCountsTotal
+            .OrderByDescending(x => x.Value)
+            .Take(10)
+            .ToList();
+            
+        _messageTypeLabels = topMessageTypes.Select(x => x.Key).ToArray();
+        _messageTypeBarSeries = new List<ChartSeries>
+        {
+            new ChartSeries
+            {
+                Name = "Count",
+                Data = topMessageTypes.Select(x => (double)x.Value).ToArray()
+            }
+        };
+    }
+    
+    private string GetTransportIcon(TransportTypes transport) => transport switch
+    {
+        TransportTypes.SignalR => Icons.Material.Filled.Cable,
+        TransportTypes.Grpc => Icons.Material.Filled.Settings,
+        TransportTypes.RabbitMq => Icons.Material.Filled.CloudQueue,
+        _ => Icons.Material.Filled.Hub
+    };
+    
+    private string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double size = bytes;
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size = size / 1024;
+        }
+        return $"{size:0.##} {sizes[order]}";
+    }
+    
+    private string FormatUptime(TimeSpan uptime)
+    {
+        if (uptime.TotalDays >= 1)
+            return $"{uptime.Days}d {uptime.Hours}h {uptime.Minutes}m";
+        if (uptime.TotalHours >= 1)
+            return $"{uptime.Hours}h {uptime.Minutes}m";
+        return $"{uptime.Minutes}m {uptime.Seconds}s";
+    }
+    
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+}

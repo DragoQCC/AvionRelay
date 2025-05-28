@@ -6,25 +6,20 @@ namespace AvionRelay.Core.Messages.MessageTypes;
 /// Represents a condition or state signaled by the sender. <br/>
 /// One-to-one, should be acknowledged, no response required. 
 /// </summary>
-public abstract class Alert : AvionRelayMessageBase , IAcknowledge, ISingleReceiver
+public abstract record Alert : AvionRelayMessage, IAcknowledge, ISingleReceiver
 {
-    /// <inheritdoc />
-    public MessageReceiver Receiver { get; }
-    
-    /// <inheritdoc />
-    bool IAcknowledge.IsAcknowledged { get; set; }
-
-    public bool IsAcknowledged
+    protected Alert()
     {
-        get => ((IAcknowledge)this).IsAcknowledged;
-        internal set => ((IAcknowledge)this).IsAcknowledged = value;
-    }
+        AllowedStates = new List<MessageState>
+        {
+            new MessageState.Created(),
+            new MessageState.Sent(),
+            new MessageState.Received(),
+            new MessageState.Processing(),
+            new FinalizedMessageState.Failed(),
+            new FinalizedMessageState.AcknowledgementReceived()
+        };
 
-    /// <inheritdoc />
-    public void Acknowledge()
-    {
-        IsAcknowledged = true;
+        Metadata.BaseMessageType = BaseMessageType.Alert;
     }
-
-   
 }

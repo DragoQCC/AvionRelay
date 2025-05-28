@@ -8,8 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="HelpfulTypesAndExtensions" Version="1.7.0" />
+      <PackageReference Include="HelpfulTypesAndExtensions" Version="1.8.0" />
       <PackageReference Include="IntercomEventing" Version="1.0.0" />
+      <PackageReference Include="Metalama.Extensions.DependencyInjection" Version="2025.1.6" />
+      <PackageReference Include="Metalama.Framework" Version="2025.1.6" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
     </ItemGroup>
 
@@ -29,7 +31,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Handlers\Models\" />
+      <Folder Include="Features\Processors\Models\" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <InternalsVisibleTo Include="AvionRelay.Internal" />
+        <InternalsVisibleTo Include="AvionRelay.External" />
+        <InternalsVisibleTo Include="AvionRelay.External.Transports.SignalR" />
     </ItemGroup>
 
 </Project>

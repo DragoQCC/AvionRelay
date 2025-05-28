@@ -1,0 +1,110 @@
+﻿@page "/connections"
+@using AvionRelay.External.Hub.Services
+@using MudBlazor
+@inject ConnectionTracker ConnectionTracker
+@inject IDialogService DialogService
+
+<PageTitle>Connections - AvionRelay Hub</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Active Connections</MudText>
+
+<MudTable Items="@_connections" Filter="new Func<ClientConnection,bool>(FilterFunc)" 
+          @bind-SelectedItem="_selectedConnection" Hover="true" Breakpoint="Breakpoint.Sm">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Clients</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" 
+                     AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Client Name</MudTh>
+        <MudTh>State</MudTh>
+        <MudTh>Transport</MudTh>
+        <MudTh>Source</MudTh>
+        <MudTh>Connected At</MudTh>
+        <MudTh>Duration</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Client Name">@(context.ClientName ?? "Anonymous")</MudTd>
+        <MudTd DataLabel="State">@context.ConnectionState</MudTd>
+        <MudTd DataLabel="Transport">@context.TransportType</MudTd>
+        <MudTd DataLabel="Source">@context.HostAddress.AbsoluteUri</MudTd>
+        <MudTd DataLabel="Connected At">@context.ConnectedAt.ToLocalTime().ToString("HH:mm:ss")</MudTd>
+        <MudTd DataLabel="Duration">@FormatDuration(DateTime.UtcNow - context.ConnectedAt)</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudIconButton Icon="@Icons.Material.Filled.Info" Size="Size.Small" 
+                          OnClick="@(() => ShowConnectionDetails(context))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error"
+                          OnClick="@(() => DisconnectClient(context))" />
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private IEnumerable<ClientConnection> _connections = [ ];
+    private ClientConnection? _selectedConnection;
+    private string _searchString = "";
+    private Timer? _refreshTimer;
+
+    protected override void OnInitialized()
+    {
+        LoadConnections();
+        _refreshTimer = new Timer(_ => InvokeAsync(LoadConnections), null, 
+            TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+    }
+
+    private void LoadConnections()
+    {
+        _connections = ConnectionTracker.GetActiveConnections();
+        StateHasChanged();
+    }
+
+    private bool FilterFunc(ClientConnection connection)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+        {
+            return true;
+        }
+        return connection.ConnectionId.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               (connection.ClientName?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+               (connection.HostAddress?.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
+               (connection.TransportType.ToString()?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private string FormatDuration(TimeSpan duration)
+    {
+        if (duration.TotalMinutes < 1)
+            return $"{duration.Seconds}s";
+        if (duration.TotalHours < 1)
+            return $"{duration.Minutes}m {duration.Seconds}s";
+        return $"{(int)duration.TotalHours}h {duration.Minutes}m";
+    }
+
+    private async Task ShowConnectionDetails(ClientConnection connection)
+    {
+        var parameters = new DialogParameters<ConnectionDetailsDialog>
+        {
+            { x => x.Connection, connection }
+        };
+        await DialogService.ShowAsync<ConnectionDetailsDialog>("Connection Details", parameters);
+    }
+
+    private async Task DisconnectClient(ClientConnection connection)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Disconnect Client",
+            $"Are you sure you want to disconnect {connection.ClientName ?? connection.ConnectionId}?",
+            yesText: "Disconnect", cancelText: "Cancel");
+            
+        if (result == true)
+        {
+            // Implement disconnect logic
+        }
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+}

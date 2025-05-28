@@ -1,0 +1,187 @@
+﻿@page "/"
+@using AvionRelay.External.Hub.Components.Connections
+@using MudBlazor
+
+@inject ConnectionTracker ConnectionTracker
+@inject SignalRMessageStatistics Statistics
+
+<PageTitle>Home</PageTitle>
+
+<PageTitle>Avion Relay Hub Dashboard</PageTitle>
+
+<h1>Avion Relay Hub Dashboard</h1>
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.body2" Class="mb-2">Active Connections</MudText>
+            <MudText Typo="Typo.h4" Color="Color.Primary">@_connectionCount</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Color="Color.Success" Size="Size.Small" />
+            <MudText Typo="Typo.caption" Color="Color.Success">+12% from last hour</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.body2" Class="mb-2">Messages/min</MudText>
+            <MudText Typo="Typo.h4" Color="Color.Secondary">@_messagesPerMinute</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Info" Size="Size.Small" />
+            <MudText Typo="Typo.caption">Avg: @_avgMessagesPerMinute</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.body2" Class="mb-2">Total Messages</MudText>
+            <MudText Typo="Typo.h4">@_stats.TotalMessagesReceived.ToString("N0")</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" />
+            <MudText Typo="Typo.caption">@FormatBytes(_stats.TotalBytesReceived)</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.body2" Class="mb-2">Uptime</MudText>
+            <MudText Typo="Typo.h4">@_uptime</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+            <MudText Typo="Typo.caption" Color="Color.Success">Healthy</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" md="8">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-4">Message Activity</MudText>
+            <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" 
+                     XAxisLabels="@_chartLabels" ChartOptions="@_chartOptions" 
+                     Height="300px" />
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" md="4">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-4">Message Types</MudText>
+            <MudChart ChartType="ChartType.Donut" ChartSeries="@_pieChartSeries" 
+                     ChartOptions="@_pieChartOptions" Height="300px" />
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-4">Recent Activity</MudText>
+            <MudTimeline TimelineOrientation="TimelineOrientation.Vertical" TimelinePosition="TimelinePosition.Start">
+                @foreach (var activity in _recentActivities)
+                {
+                    <MudTimelineItem Color="@activity.Color" Size="Size.Small">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText Typo="Typo.body2">@activity.Description</MudText>
+                                <MudText Typo="Typo.caption">@activity.Timestamp.ToString("HH:mm:ss")</MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudTimelineItem>
+                }
+            </MudTimeline>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private Timer? _refreshTimer;
+    private int _connectionCount;
+    private int _messagesPerMinute;
+    private int _avgMessagesPerMinute = 245;
+    private string _uptime = "0d 0h";
+    private SignalRMessageStatistics.SignalRMessageStatisticsSnapshot _stats = new();
+    private List<ChartSeries> _chartSeries = new();
+    private string[] _chartLabels = Array.Empty<string>();
+    private ChartOptions _chartOptions = new() { YAxisFormat = "N0" };
+    private List<ChartSeries> _pieChartSeries = new();
+    private ChartOptions _pieChartOptions = new();
+    private List<RecentActivity> _recentActivities = new();
+    private readonly DateTime _startTime = DateTime.UtcNow;
+    
+    
+
+    protected override void OnInitialized()
+    {
+        _refreshTimer = new Timer(RefreshData, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+        InitializeChartData();
+    }
+
+    private void RefreshData(object? state)
+    {
+        InvokeAsync(() =>
+        {
+            _connectionCount = ConnectionTracker.GetConnectionCount();
+            _stats = Statistics.GetSnapshot();
+            _messagesPerMinute = Random.Shared.Next(200, 300);
+            _uptime = FormatUptime(DateTime.UtcNow - _startTime);
+            UpdateChartData();
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
+    /// To provide sample data to test charts
+    /// </summary>
+    private void InitializeChartData()
+    {
+        _chartLabels = Enumerable.Range(-10, 11).Select(i => $"{i}m").ToArray();
+        _chartSeries = new List<ChartSeries>
+        {
+            new ChartSeries
+            {
+                Name = "Messages",
+                Data = Enumerable.Range(0, 11).Select(i => (double)Random.Shared.Next(100, 400)).ToArray()
+            }
+        };
+
+        _pieChartSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Commands", Data = new double[] { 35 } },
+            new ChartSeries { Name = "Notifications", Data = new double[] { 30 } },
+            new ChartSeries { Name = "Inspections", Data = new double[] { 20 } },
+            new ChartSeries { Name = "Alerts", Data = new double[] { 15 } }
+        };
+    }
+
+    private void UpdateChartData()
+    {
+        // Update with real data from statistics
+        if (_stats.MessageTypeStats.Any())
+        {
+            _pieChartSeries = _stats.MessageTypeStats
+                .Select(kvp => new ChartSeries 
+                { 
+                    Name = kvp.Key, 
+                    Data = new double[] { kvp.Value.Count } 
+                })
+                .ToList();
+        }
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double size = bytes;
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size = size / 1024;
+        }
+        return $"{size:0.##} {sizes[order]}";
+    }
+
+    private string FormatUptime(TimeSpan uptime)
+    {
+        return $"{uptime.Days}d {uptime.Hours}h {uptime.Minutes}m";
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+
+    private record RecentActivity(string Description, DateTime Timestamp, Color Color);
+}

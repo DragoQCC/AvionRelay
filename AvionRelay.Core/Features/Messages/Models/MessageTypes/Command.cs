@@ -6,30 +6,21 @@ namespace AvionRelay.Core.Messages.MessageTypes;
 /// Represents a command, one-to-one, where the receiving side performs an action. <br/>
 /// Should be acknowledged and should respond.
 /// </summary>
-public abstract class Command<TResponse> : AvionRelayMessageBase, IRespond<TResponse>, IAcknowledge, ISingleReceiver
+public abstract record Command<TResponse> : AvionRelayMessage, IRespond<TResponse>, ISingleReceiver
 {
-    /// <inheritdoc />
-    bool IAcknowledge.IsAcknowledged { get; set; }
-    
-    /// <inheritdoc />
-    public MessageReceiver Receiver { get; }
+    protected Command()
+    {
+        AllowedStates = new List<MessageState>
+        {
+            new MessageState.Created(),
+            new MessageState.Sent(),
+            new MessageState.Received(),
+            new MessageState.Processing(),
+            new MessageState.Responded(),
+            new FinalizedMessageState.ResponseReceived(),
+            new FinalizedMessageState.Failed(),
+        };
 
-    public bool IsAcknowledged
-    {
-        get => ((IAcknowledge)this).IsAcknowledged;
-        internal set => ((IAcknowledge)this).IsAcknowledged = value;
-    }
-
-    /// <inheritdoc />
-    public void Acknowledge()
-    {
-        IsAcknowledged = true;
-    }
-    
-    /// <inheritdoc />
-    public async Task Respond(TResponse response)
-    {
-        Console.WriteLine(response);
-        await Task.CompletedTask;
+        Metadata.BaseMessageType = BaseMessageType.Command;
     }
 }

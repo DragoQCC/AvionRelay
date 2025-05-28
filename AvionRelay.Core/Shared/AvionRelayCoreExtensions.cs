@@ -1,5 +1,6 @@
-﻿using AvionRelay.Core.Handlers;
+﻿using AvionRelay.Core.Aspects;
 using AvionRelay.Core.Messages;
+using AvionRelay.Core.Processors;
 using AvionRelay.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,71 +13,30 @@ public static partial class AvionRelayCoreExtensions
     /// </summary>
     /// <param name="services">The service collection</param>
     /// <returns>The service collection for chaining</returns>
-    public static IServiceCollection AddAvionRelayCore(this IServiceCollection services)
+    public static IServiceCollection AddAvionRelayCore(this IServiceCollection services, Action<AvionRelayOptions>? configure = null)
     {
-        // Register the state transition graph
-        services.AddSingleton(StateTransitionGraph.CreateDefaultGraph());
+        // Register the options
+        var options = new AvionRelayOptions();
+        configure?.Invoke(options);
+        services.AddSingleton(options);
         
-        // Register the processor registry
-        services.AddSingleton<StateProcessorRegistry>();
+        //Create the StateTransitionGraph
+        StateTransitionGraph.CreateDefaultGraph();
         
-        // Register the ProcessorChainFactory
-        services.AddSingleton<StateProcessorChainFactory>();
-        
-        // Register the pipeline as a singleton
-        services.AddSingleton<MessageProcessingPipeline>();
-        
-        // Register the message processor
-        services.AddSingleton<MessageProcessor>();
-        
-        // Register the message service
-        services.AddSingleton<MessageService>();
-        
-        return services;
-    }
-    
-    /// <summary>
-    /// Adds a state-specific processor to the service collection.
-    /// </summary>
-    /// <typeparam name="TState">The state type</typeparam>
-    /// <typeparam name="TProcessor">The processor type</typeparam>
-    /// <param name="services">The service collection</param>
-    /// <returns>The service collection for chaining</returns>
-    public static IServiceCollection AddStateProcessor<TState, TProcessor>(this IServiceCollection services) where TState : MessageState where TProcessor : class, IStateSpecificProcessor<TState>
-    {
-        // Register the processor
-        services.AddTransient<TProcessor>();
-        
-        // Register a factory that adds the processor to the registry
-        services.AddSingleton<IStartupTask>(provider =>
-        {
-            return new RegisterProcessorStartupTask<TState, TProcessor>(
-                provider.GetRequiredService<StateProcessorRegistry>(),
-                provider.GetRequiredService<TProcessor>());
-        });
+        services.AddSingleton<MessagingManager>();
         
         return services;
     }
 
     /// <summary>
-    /// Startup task that registers a processor with the registry.
+    /// Adds the in-memory message storage to the service collection.
     /// </summary>
-    /// <typeparam name="TState">The state type</typeparam>
-    /// <typeparam name="TProcessor">The processor type</typeparam>
-    private class RegisterProcessorStartupTask<TState, TProcessor> : IStartupTask where TState : MessageState where TProcessor : IStateSpecificProcessor<TState>
+    /// <param name="services">The service collection</param>
+    /// <returns></returns>
+    public static IServiceCollection WithInMemoryStorage(this IServiceCollection services)
     {
-        private readonly StateProcessorRegistry _registry;
-        private readonly TProcessor _processor;
-        
-        public RegisterProcessorStartupTask(StateProcessorRegistry registry, TProcessor processor)
-        {
-            _registry = registry;
-            _processor = processor;
-        }
-        
-        public void Execute()
-        {
-            _registry.RegisterProcessor(_processor);
-        }
+        services.AddSingleton<IMessageStorage, InMemoryStorage>();
+        return services;
     }
+
 }

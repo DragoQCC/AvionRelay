@@ -1,0 +1,54 @@
+﻿@using AvionRelay.External.Hub.Services
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField Label="Connection ID" Value="@Connection.ConnectionId" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField Label="Client Name" Value="@Connection.ClientName" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField Label="State" Value="@Connection.ConnectionState" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField Label="Transport" Value="@Connection.TransportType" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField Label="Connected At" Value="@Connection.ConnectedAt.ToString()" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField Label="Host Address" Value="@Connection.HostAddress.AbsoluteUri" ReadOnly="true" />
+            </MudItem>
+            @if (Connection.Metadata.Any())
+            {
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle1" Class="mt-4">Metadata</MudText>
+                    <MudSimpleTable>
+                        <tbody>
+                        @foreach (var kvp in Connection.Metadata)
+                        {
+                            <tr>
+                                <td>@kvp.Key</td>
+                                <td>@kvp.Value</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public ClientConnection Connection { get; set; } = null!;
+
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,91 @@
+﻿@using System.Text.Json
+@using MudBlazor
+<MudDialog>
+    <DialogContent>
+        <MudTabs Elevation="0" Rounded="true" Border="true">
+            <MudTabPanel Text="General">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudField Label="Message ID" Variant="Variant.Text">@Message.MessageId</MudField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudField Label="Type" Variant="Variant.Text">@Message.MessageType</MudField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudField Label="Pattern" Variant="Variant.Text">@Message.BaseMessageType</MudField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudField Label="Sender ID" Variant="Variant.Text">@Message.SenderId</MudField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudField Label="Transport" Variant="Variant.Text">@Message.TransportType</MudField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudField Label="Timestamp" Variant="Variant.Text">
+                            @Message.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff")
+                        </MudField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudField Label="Size" Variant="Variant.Text">@FormatBytes(Message.PayloadSize)</MudField>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+            <MudTabPanel Text="Payload">
+                <MudPaper Class="pa-2" Elevation="0">
+                    <pre style="overflow: auto; max-height: 400px;">@FormatJson(Message.PayloadJson)</pre>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Correlation">
+                @if (Message.CorrelationId.HasValue)
+                {
+                    <MudField Label="Correlation ID" Variant="Variant.Text">
+                        @Message.CorrelationId.Value
+                    </MudField>
+                }
+                else
+                {
+                    <MudText>No correlation information available</MudText>
+                }
+            </MudTabPanel>
+        </MudTabs>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Close</MudButton>
+        <MudButton Color="Color.Primary" OnClick="CopyToClipboard">Copy JSON</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public StoredMessage Message { get; set; } = null!;
+    [Inject] IJSRuntime JS { get; set; } = null!;
+    [Inject] ISnackbar Snackbar { get; set; } = null!;
+
+    void Cancel() => MudDialog.Cancel();
+    
+    private string FormatJson(string json)
+    {
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<JsonElement>(json);
+            return JsonSerializer.Serialize(parsed, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return json;
+        }
+    }
+    
+    private string FormatBytes(int bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024):F1} MB";
+    }
+    
+    private async Task CopyToClipboard()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", Message.PayloadJson);
+        Snackbar.Add("Payload copied to clipboard", Severity.Success);
+    }
+}

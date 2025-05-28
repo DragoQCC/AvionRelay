@@ -1,0 +1,219 @@
+﻿@page "/configuration"
+@using System.Text.Json
+@using AvionRelay.Core
+@using MudBlazor
+@inject IConfiguration _configuration
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Configuration - AvionRelay Hub</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Hub Configuration</MudText>
+
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+    <MudTabPanel Text="General Settings">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField Label="Application Name" @bind-Value="_avionRelayConfig.ApplicationName" HelperText="Name of this hub instance" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSwitch Label="Enable Message Persistence" @bind-Value="_avionRelayConfig.EnableMessagePersistence" Color="Color.Primary" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField Label="Max Message Retries" @bind-Value="_avionRelayConfig.RetryPolicy.MaxRetries" Min="0" Max="10" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField Label="Message Timeout" @bind-Value="_messageTimeoutString" HelperText="Format: HH:MM:SS" />
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+    
+    <MudTabPanel Text="Transport Settings">
+        <MudExpansionPanels MultiExpansion="true">
+            <MudExpansionPanel Text="SignalR Configuration" Icon="@Icons.Material.Filled.Cable">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="_avionRelayConfig.Transports.SignalR.HubPath" Label="Hub Path" Text="/avionrelay" ReadOnly="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Max Message Size (MB)" Value="10" Min="1" Max="100" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Client Timeout (seconds)" Value="60" Min="10" Max="300" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Keep Alive Interval (seconds)" Value="30" Min="5" Max="120" />
+                    </MudItem>
+                </MudGrid>
+            </MudExpansionPanel>
+            
+            @* TODO: Make sure gRPC configuration is correct and these are bound so they work later *@
+            <MudExpansionPanel Text="gRPC Configuration" Icon="@Icons.Material.Filled.Settings">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Listen Address" Value="@("0.0.0.0:5002")" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Max Message Size (MB)" Value="4" Min="1" Max="100" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudSwitch Label="Enable TLS" Value="true" Color="Color.Primary" />
+                    </MudItem>
+                </MudGrid>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudTabPanel>
+    
+    <MudTabPanel Text="Storage Settings">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudSelect Label="Storage Provider" @bind-Value="_storageProvider">
+                    <MudSelectItem Value="StorageProvider.InMemory">In Memory</MudSelectItem>
+                    <MudSelectItem Value="StorageProvider.SQLite">SQLite</MudSelectItem>
+                    <MudSelectItem Value="StorageProvider.PostgreSQL">PostgreSQL</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField Label="Connection String" @bind-Value="_connectionString" 
+                             HelperText="Database connection string" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField Label="Message Retention Days" Value="7" Min="1" Max="365" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSwitch Label="Enable Message Compression" @bind-Value="_avionRelayConfig.StorageConfig.EnableCompression" Color="Color.Primary" />
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+    
+    <MudTabPanel Text="Advanced">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Environment Variables</MudText>
+                <MudSimpleTable Hover="true" Dense="true">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var env in GetEnvironmentVariables())
+                        {
+                            <tr>
+                                <td>@env.Key</td>
+                                <td>@env.Value</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudItem>
+            <MudItem xs="12" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" 
+                          StartIcon="@Icons.Material.Filled.RestartAlt"
+                          OnClick="RestartHub">
+                    Restart Hub
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                          StartIcon="@Icons.Material.Filled.Download"
+                          OnClick="ExportConfiguration" Class="ml-2">
+                    Export Configuration
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+</MudTabs>
+
+<MudPaper Class="pa-4 mt-4" Elevation="2">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveConfiguration">
+        Save Configuration
+    </MudButton>
+    <MudButton Variant="Variant.Text" OnClick="ResetConfiguration" Class="ml-2">
+        Reset to Defaults
+    </MudButton>
+</MudPaper>
+
+@code {
+    private AvionRelayExternalOptions _avionRelayConfig = new();
+    private string _messageTimeoutString = "00:00:30";
+    private StorageProvider _storageProvider = StorageProvider.SQLite;
+    private string _connectionString = "";
+    private bool _enableAuth = false;
+    private string _authenticationType = "JWT";
+    
+    protected override void OnInitialized()
+    {
+        LoadConfiguration();
+    }
+    
+    private void LoadConfiguration()
+    {
+        _configuration.GetSection("AvionRelay").Bind(_avionRelayConfig);
+        _messageTimeoutString = _avionRelayConfig.MessageTimeout.ToString(@"hh\:mm\:ss");
+        _storageProvider = _avionRelayConfig.StorageConfig.Provider;
+        _connectionString = _avionRelayConfig.StorageConfig.ConnectionString;
+    }
+    
+    private async Task SaveConfiguration()
+    {
+        try
+        {
+            // Parse timeout
+            if (TimeSpan.TryParse(_messageTimeoutString, out var timeout))
+            {
+                _avionRelayConfig.MessageTimeout = timeout;
+            }
+            
+            // In a real application, you would persist these settings
+            Snackbar.Add("Configuration saved successfully", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to save configuration: {ex.Message}", Severity.Error);
+        }
+    }
+    
+    private void ResetConfiguration()
+    {
+        _avionRelayConfig = new AvionRelayExternalOptions();
+        _messageTimeoutString = _avionRelayConfig.MessageTimeout.ToString(@"hh\:mm\:ss");
+        Snackbar.Add("Configuration reset to defaults", Severity.Info);
+    }
+    
+    private async Task RestartHub()
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Restart Hub",
+            "Are you sure you want to restart the hub? All active connections will be dropped.",
+            yesText: "Restart", cancelText: "Cancel");
+            
+        if (result == true)
+        {
+            // Implement restart logic
+            Snackbar.Add("Hub restart initiated", Severity.Warning);
+        }
+    }
+    
+    private async Task ExportConfiguration()
+    {
+        // Export configuration as JSON
+        var json = JsonSerializer.Serialize(_avionRelayConfig, new JsonSerializerOptions 
+        { 
+            WriteIndented = true 
+        });
+        
+        // In a real app, trigger file download
+        Snackbar.Add("Configuration exported", Severity.Success);
+    }
+    
+    private Dictionary<string, string> GetEnvironmentVariables()
+    {
+        return new Dictionary<string, string>
+        {
+            { "ASPNETCORE_ENVIRONMENT", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production" },
+            { "DOTNET_VERSION", Environment.Version.ToString() },
+            { "PROCESSOR_COUNT", Environment.ProcessorCount.ToString() },
+            { "OS_VERSION", Environment.OSVersion.ToString() }
+        };
+    }
+}

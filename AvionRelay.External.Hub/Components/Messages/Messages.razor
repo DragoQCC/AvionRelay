@@ -1,0 +1,266 @@
+﻿@page "/messages"
+@using System.Text.Json
+@using AvionRelay.External.Hub.Features.Transports
+@using AvionRelay.External.Hub.Services
+@using IntercomEventing.Features.Events
+@using MudBlazor
+@inject TransportMonitorAggregator TransportMonitorAggregator
+@inject IDialogService DialogService
+@implements IDisposable
+
+<PageTitle>Messages - AvionRelay Hub</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Message Activity</MudText>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudTextField @bind-Value="_searchString" Placeholder="Search messages..." 
+                                 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect T="string" Label="Message Type" @bind-Value="_selectedMessageType" Clearable="true">
+                        <MudSelectItem Value="@("")">All Types</MudSelectItem>
+                        @foreach (var type in _messageTypes)
+                        {
+                            <MudSelectItem Value="@type">@type</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect T="TransportTypes" Label="Transport" @bind-Value="_selectedTransport" Clearable="true">
+                        <MudSelectItem Value="@("")">All Transports</MudSelectItem>
+                        <MudSelectItem Value="@(TransportTypes.SignalR)">SignalR</MudSelectItem>
+                        <MudSelectItem Value="@(TransportTypes.Grpc)">gRPC</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSwitch @bind-Value="_autoRefresh" Label="Auto Refresh" Color="Color.Primary" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12">
+        <MudTable Items="@_filteredMessages" Hover="true" Striped="true" Dense="true" 
+                  FixedHeader="true" Height="600px" @bind-SelectedItem="_selectedMessage">
+            <HeaderContent>
+                <MudTh>Time</MudTh>
+                <MudTh>Message ID</MudTh>
+                <MudTh>Type</MudTh>
+                <MudTh>Pattern</MudTh>
+                <MudTh>Sender</MudTh>
+                <MudTh>Transport</MudTh>
+                <MudTh>Size</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Time">
+                    <MudTooltip Text="@context.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff")">
+                        <MudText Typo="Typo.caption">@GetRelativeTime(context.Timestamp)</MudText>
+                    </MudTooltip>
+                </MudTd>
+                <MudTd DataLabel="Message ID">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary">@context.MessageId.ToString()[..8]..</MudChip>
+                </MudTd>
+                <MudTd DataLabel="Type">
+                    <MudChip T="string" Size="Size.Small" Color="GetMessageTypeColor(context.MessageType)">
+                        @context.MessageType
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Pattern">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" 
+                            Icon="@GetPatternIcon(context.BaseMessageType.ToString())">
+                        @context.BaseMessageType.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Sender">@context.SenderId</MudTd>
+                <MudTd DataLabel="Transport">
+                    <MudChip T="TransportTypes" Size="Size.Small" Color="GetTransportColor(context.TransportType)">
+                        @context.TransportType
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Size">@FormatBytes(context.PayloadSize)</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudIconButton Icon="@Icons.Material.Filled.Info" Size="Size.Small"
+                                  OnClick="@(() => ShowMessageDetails(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+    
+    @if (_liveMode)
+    {
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6">Live Message Stream</MudText>
+                <MudDivider Class="my-2" />
+                <div style="height: 200px; overflow-y: auto;">
+                    @foreach (var msg in _liveMessages.TakeLast(20).Reverse())
+                    {
+                        <MudGrid>
+                            <MudItem xs="2">
+                                <MudText Typo="Typo.caption">@msg.Timestamp.ToString("HH:mm:ss.fff")</MudText>
+                            </MudItem>
+                            <MudItem xs="2">
+                                <MudChip T="string" Size="Size.Small" Color="GetTransportColor(msg.TransportType)">
+                                    @msg.TransportType
+                                </MudChip>
+                            </MudItem>
+                            <MudItem xs="3">
+                                <MudChip T="string" Size="Size.Small" Color="GetMessageTypeColor(msg.MessageType)">
+                                    @msg.MessageType
+                                </MudChip>
+                            </MudItem>
+                            <MudItem xs="5">
+                                <MudText Typo="Typo.caption">@msg.SenderId → @msg.BaseMessageType</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                </div>
+            </MudPaper>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private List<StoredMessage> _messages = new();
+    private List<StoredMessage> _filteredMessages = new();
+    private List<StoredMessage> _liveMessages = new();
+    private StoredMessage? _selectedMessage;
+    private HashSet<string> _messageTypes = new();
+    
+    private string _searchString = "";
+    private string _selectedMessageType = "";
+    private TransportTypes _selectedTransport = TransportTypes.Unknown;
+    private bool _autoRefresh = true;
+    private bool _liveMode = true;
+    
+    private Timer? _refreshTimer;
+    
+    private Subscription<MessageReceivedEvent>? _messageReceivedSubscription;
+    private Subscription<MessageSentEvent>? _messageSentSubscription;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessages();
+        
+        // Subscribe to live events
+       _messageReceivedSubscription = await TransportMonitorAggregator.MessageReceived.Subscribe<MessageReceivedEventCall>(OnMessageReceived);
+       _messageSentSubscription = await TransportMonitorAggregator.MessageSent.Subscribe<MessageSentEventCall>(OnMessageSent);
+        
+        if (_autoRefresh)
+        {
+            _refreshTimer = new Timer(async _ => await InvokeAsync(LoadMessages), 
+                null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+        }
+    }
+    
+    private async Task LoadMessages()
+    {
+        _messages = (await TransportMonitorAggregator.GetRecentMessagesAsync(500)).ToList();
+        _messageTypes = _messages.Select(m => m.MessageType).Distinct().ToHashSet();
+        FilterMessages();
+        StateHasChanged();
+    }
+    
+    private void FilterMessages()
+    {
+        _filteredMessages = _messages.Where(m =>
+            (string.IsNullOrEmpty(_searchString) || 
+             m.MessageType.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+             m.MessageId.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+             m.SenderId.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(_selectedMessageType) || m.MessageType == _selectedMessageType) &&
+            (_selectedTransport != TransportTypes.Unknown || m.TransportType == _selectedTransport)
+        ).ToList();
+    }
+    
+    private async Task OnMessageReceived(MessageReceivedEventCall e)
+    {
+        await InvokeAsync(() =>
+        {
+            var transportType = (e.Metadata.EventCaller as ITransportMonitor)?.TransportType ?? TransportTypes.Unknown;
+            _liveMessages.Add(new StoredMessage
+            {
+                MessageId = e.Package.WrapperID,
+                MessageType = e.Package.MessageType.ToString(),
+                BaseMessageType = e.Package.Message.Metadata.BaseMessageType,
+                Timestamp = DateTime.UtcNow,
+                SenderId = e.FromClientId,
+                TransportType = transportType,
+                PayloadSize = e.MessageSize
+            });
+            
+            if (_liveMessages.Count > 100)
+                _liveMessages.RemoveAt(0);
+                
+            StateHasChanged();
+        }).ConfigureAwait(false);
+    }
+    
+    private async Task OnMessageSent(MessageSentEventCall e)
+    {
+        // Similar to OnMessageReceived
+    }
+    
+    private async Task ShowMessageDetails(StoredMessage message)
+    {
+        var parameters = new DialogParameters<MessageDetailsDialog>
+        {
+            { x => x.Message, message }
+        };
+        await DialogService.ShowAsync<MessageDetailsDialog>("Message Details", parameters);
+    }
+    
+    private string GetRelativeTime(DateTime timestamp)
+    {
+        var diff = DateTime.UtcNow - timestamp;
+        if (diff.TotalSeconds < 60) return $"{(int)diff.TotalSeconds}s ago";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        return $"{(int)diff.TotalDays}d ago";
+    }
+    
+    private Color GetMessageTypeColor(string messageType) => messageType switch
+    {
+        var t when t.EndsWith("Command") => Color.Primary,
+        var t when t.EndsWith("Notification") => Color.Info,
+        var t when t.EndsWith("Alert") => Color.Warning,
+        var t when t.EndsWith("Inspection") => Color.Secondary,
+        _ => Color.Default
+    };
+    
+    private Color GetTransportColor(TransportTypes transport) => transport switch
+    {
+        TransportTypes.SignalR => Color.Primary,
+        TransportTypes.Grpc => Color.Secondary,
+        TransportTypes.RabbitMq => Color.Tertiary,
+        _ => Color.Default
+    };
+    
+    private string GetPatternIcon(string pattern) => pattern switch
+    {
+        "Command" => Icons.Material.Filled.Send,
+        "Notification" => Icons.Material.Filled.NotificationsActive,
+        "Alert" => Icons.Material.Filled.Warning,
+        "Inspection" => Icons.Material.Filled.Search,
+        _ => Icons.Material.Filled.Message
+    };
+    
+    private string FormatBytes(int bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024):F1} MB";
+    }
+    
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+        TransportMonitorAggregator.MessageReceived.Unsubscribe(_messageReceivedSubscription);
+        TransportMonitorAggregator.MessageSent.Unsubscribe(_messageSentSubscription);
+    }
+}
