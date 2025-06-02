@@ -5,6 +5,8 @@ namespace AvionRelay.Core.Dispatchers;
 
 public abstract class AvionRelayMessageBus
 {
+    public abstract Task RegisterMessenger(List<string> supportedMessageNames);
+    
     #region Message Sending
     
     public abstract Task<MessageResponse<TResponse>> ExecuteCommand<TCommand, TResponse>(TCommand command, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TCommand : Command<TResponse>;

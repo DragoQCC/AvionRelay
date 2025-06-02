@@ -4,6 +4,7 @@ namespace AvionRelay.External.Hub.Components.Connections;
 
 public class ConnectionTracker
 {
+    public ConcurrentDictionary<string, string> TransportIDLink = new();
     private readonly ConcurrentDictionary<string, ClientConnection> _connections = new();
     private readonly ILogger<ConnectionTracker> _logger;
 
@@ -24,6 +25,35 @@ public class ConnectionTracker
             metadata ?? new Dictionary<string, object>()
         );
         _logger.LogInformation("Client connected: {ConnectionId}", connectionId);
+    }
+
+    public void TrackTransportToClientID(string transportId, string clientId)
+    {
+        TransportIDLink[transportId] = clientId;
+    }
+
+    public string GetTransportIDFromClientID(string clientId)
+    {
+        foreach (var transportIdPair in TransportIDLink)
+        {
+            if (transportIdPair.Value == clientId)
+            {
+                return transportIdPair.Key;
+            }
+        }
+        return string.Empty;
+    }
+
+    public string GetClientIDFromTransportID(string transportId)
+    {
+        foreach (KeyValuePair<string, string> transportIdPair in TransportIDLink)
+        {
+            if (transportIdPair.Key == transportId)
+            {
+                return transportIdPair.Value;
+            }
+        }
+        return string.Empty;
     }
 
     public void StopTrackingConnection(string connectionId)

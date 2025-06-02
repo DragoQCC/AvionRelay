@@ -64,7 +64,7 @@ public class InternalMessageSendingExample
         // Send the message and wait for a response
         var response = await _bus.ExecuteCommand<CreateUserCommand,UserCreated>(userCommand);
         
-        bool wasAcknowledged = userCommand.Metadata.State is FinalizedMessageState.AcknowledgementReceived or FinalizedMessageState.ResponseReceived;
+        bool wasAcknowledged = userCommand.Metadata.State is MessageState.AcknowledgementReceived or MessageState.ResponseReceived;
         Console.WriteLine($"Message acknowledged: {wasAcknowledged}");
         Console.WriteLine($"Received response from: {response.Acknowledger.ReceiverId}: {response.Response}");
     }
@@ -96,7 +96,7 @@ public class InternalMessageSendingExample
         await _bus.SendAlert(alert);
         //wait 1 second and then verify the message was acknowledged
         await Task.Delay(100);
-        bool wasAcknowledged = alert.Metadata.State is FinalizedMessageState.AcknowledgementReceived;
+        bool wasAcknowledged = alert.Metadata.State is MessageState.AcknowledgementReceived;
         Console.WriteLine($"Alert acknowledged: {wasAcknowledged}");
         Console.WriteLine($"Ack Info: {alert.Metadata.Acknowledgements.FirstOrDefault()}");
     }

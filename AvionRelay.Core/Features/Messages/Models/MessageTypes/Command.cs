@@ -1,4 +1,5 @@
 ﻿using AvionRelay.Core.Dispatchers;
+using Newtonsoft.Json;
 
 namespace AvionRelay.Core.Messages.MessageTypes;
 
@@ -12,13 +13,13 @@ public abstract record Command<TResponse> : AvionRelayMessage, IRespond<TRespons
     {
         AllowedStates = new List<MessageState>
         {
-            new MessageState.Created(),
-            new MessageState.Sent(),
-            new MessageState.Received(),
-            new MessageState.Processing(),
-            new MessageState.Responded(),
-            new FinalizedMessageState.ResponseReceived(),
-            new FinalizedMessageState.Failed(),
+            MessageState.Created,
+            MessageState.Sent,
+            MessageState.Received,
+            MessageState.Processing,
+            MessageState.Responded,
+            MessageState.ResponseReceived,
+            MessageState.Failed,
         };
 
         Metadata.BaseMessageType = BaseMessageType.Command;

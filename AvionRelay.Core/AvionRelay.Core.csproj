@@ -38,6 +38,7 @@
         <InternalsVisibleTo Include="AvionRelay.Internal" />
         <InternalsVisibleTo Include="AvionRelay.External" />
         <InternalsVisibleTo Include="AvionRelay.External.Transports.SignalR" />
+        <InternalsVisibleTo Include="AvionRelay.External.Hub" />
     </ItemGroup>
 
 </Project>

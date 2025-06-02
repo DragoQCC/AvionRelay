@@ -21,7 +21,6 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
         _logger = logger;
         _transportOptions = transportOptions;
         _client = client;
-        _client.PackageReceived += HandleReceivedPackage;
         _client.Connected += OnConnected;
         _client.Disconnected += OnDisconnected;
     }
@@ -35,6 +34,11 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
     {
         await _client.DisconnectAsync();
     }
+
+    public override async Task RegisterMessenger(List<string>? supportedMessageNames = null)
+    {
+        await _client.RegisterClient(supportedMessageNames);
+    }
     
     //TODO: Update with the right Response wrapper (i.e. IMessageResponse)
     public override async Task<MessageResponse<TResponse>> ExecuteCommand<TCommand, TResponse>(TCommand command, CancellationToken? cancellationToken = null,TimeSpan? timeout = null)
@@ -47,36 +51,14 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
         
         try
         {
-            if (!await _client.SendPackageAsync(package, cancellationToken ?? CancellationToken.None))
-            {
-                throw new InvalidOperationException("Failed to send command");
-            }
-            
-            var timeoutValue = timeout ?? TimeSpan.FromSeconds(30);
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(
-                cancellationToken ?? CancellationToken.None);
-            cts.CancelAfter(timeoutValue);
-            
-            var responsePackage = await tcs.Task.WaitAsync(cts.Token);
-            
-            /*if (responsePackage.Payload is TResponse response)
-            {
-                return new MessageResponse<TResponse>
-                {
-                    Response = response,
-                    Success = true,
-                    MessageId = responsePackage.MessageId,
-                    ResponderId = responsePackage.SenderId
-                };
-            }
-            
-            throw new InvalidOperationException($"Invalid response type: {responsePackage.Payload?.GetType()}");*/
+            _logger.LogInformation("Sending message {MessageId}", messageId);
+            _logger.LogInformation("Client info: ID:{ConnectionID} State:{State}",_client.ConnectionId, _client.State);
+            return (await _client.SendMessageWaitResponse<TResponse>(package)).First();
         }
         finally
         {
             _pendingResponses.TryRemove(messageId, out _);
         }
-        return null;
     }
 
     /// <inheritdoc />
@@ -103,6 +85,8 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
     /// <inheritdoc />
     public override async Task RespondToMessage<T, TResponse>(Guid messageId, TResponse response, MessageReceiver responder)
     {
+        _logger.LogInformation("Sending response for message {messageID}", messageId);
+        await _client.SendMessageResponse(messageId, response);
     }
 
     /// <inheritdoc />

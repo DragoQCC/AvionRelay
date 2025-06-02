@@ -13,13 +13,13 @@ public abstract record Inspection<TResponse> : AvionRelayMessage, IRespond<TResp
     {
         AllowedStates = new List<MessageState>
         {
-            new MessageState.Created(),
-            new MessageState.Sent(),
-            new MessageState.Received(),
-            new MessageState.Processing(),
-            new MessageState.Responded(),
-            new FinalizedMessageState.ResponseReceived(),
-            new FinalizedMessageState.Failed(),
+            MessageState.Created,
+            MessageState.Sent,
+            MessageState.Received,
+            MessageState.Processing,
+            MessageState.Responded,
+            MessageState.ResponseReceived,
+            MessageState.Failed,
         };
 
         Metadata.BaseMessageType = BaseMessageType.Inspection;

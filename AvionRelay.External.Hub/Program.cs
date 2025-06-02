@@ -65,6 +65,8 @@ public class Program
         }
 
         builder.Services.AddSingleton<TransportMonitorAggregator>();
+        builder.Services.AddSingleton<MessageHandlerTracker>();
+        builder.Services.AddSingleton<ResponseTracker>();
 
 
         await ConfigureMessageStorageProvider(builder);

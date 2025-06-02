@@ -71,13 +71,18 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
                 if (package != null)
                 {
                     //set the state to Received
-                    _messagingManager.SetState(package.Message, new MessageState.Received());
+                    _messagingManager.SetState(package.Message, MessageState.Received);
                     await MessageHandlerRegister.ProcessPackage(package);
                 }
                 await Task.Delay(10);
             }
         });
         messageReaderTask.FireAndForget(onError: ex => _logger.LogError(ex, "Error in message reader task"));
+    }
+
+    /// <inheritdoc />
+    public override async Task RegisterMessenger(List<string> supportedMessageNames)
+    {
     }
 
     /// <inheritdoc />
@@ -120,7 +125,7 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
     {
         var package = _messageStorage.RetrievePackage(messageId);
         ArgumentNullException.ThrowIfNull(package);
-        _messagingManager.SetState(package.Message, new MessageState.Responded());
+        _messagingManager.SetState(package.Message, MessageState.Responded);
         await _responseChannel.Writer.WriteAsync(new MessageResponse<TResponse> { Response = response, MessageId = messageId, Acknowledger = responder });
     }
     
@@ -250,7 +255,7 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
                     {
                         Acknowledgement ack = new(messageId, response.Acknowledger);
                         package.Message.Metadata.Acknowledgements.Add(ack);
-                        _messagingManager.SetState(package.Message, new FinalizedMessageState.ResponseReceived());
+                        _messagingManager.SetState(package.Message, MessageState.ResponseReceived);
                         responseCount = package.Message.Metadata.Acknowledgements.Count;
                         responseList.Add((MessageResponse<TResponse?>)response);
                     }
@@ -291,7 +296,7 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
         }
         else
         {
-            _messagingManager.SetState(package.Message, new MessageState.Sent());
+            _messagingManager.SetState(package.Message, MessageState.Sent);
             //Store so we can get later to update state on response
             _messageStorage.StorePackage(package,false);
             _logger.LogDebug("Writing message {MessageId} to channel", package.Message.Metadata.MessageId);

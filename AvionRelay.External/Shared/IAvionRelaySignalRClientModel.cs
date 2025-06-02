@@ -1,4 +1,5 @@
 ﻿using AvionRelay.Core.Messages;
+using AvionRelay.Core.Messages.MessageTypes;
 
 namespace AvionRelay.External;
 
@@ -7,8 +8,9 @@ namespace AvionRelay.External;
 /// </summary>
 public interface IAvionRelaySignalRClientModel
 {
-    public Task ReceivePackage(Package package);
-    public Task<MessageResponse<TResponse>> SendResponse<TResponse>(Package package);
+    public Task ReceivePackage(TransportPackage package);
     public Task SendPackage(Package package);
+    public Task ReceiveResponses(Guid messageId,List<MessageResponse<object>> responses);
     
+
 }

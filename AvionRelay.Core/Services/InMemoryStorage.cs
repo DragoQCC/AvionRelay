@@ -35,8 +35,7 @@ public class InMemoryStorage : IMessageStorage
     {
         if (_packages.TryGetValue(messageId, out var package))
         {
-            var messageState = package.Message.Metadata.State;
-            if(messageState is FinalizedMessageState.Failed or FinalizedMessageState.AcknowledgementReceived or FinalizedMessageState.ResponseReceived)
+            if(_messagingManager.IsMessageComplete(package.Message))
             {
                 _logger.LogDebug("Message {MessageId} is in a finalized state, removing from storage", messageId);
                 _packages.TryRemove(messageId, out _);

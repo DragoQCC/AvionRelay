@@ -7,7 +7,7 @@ namespace AvionRelay.Core.Processors;
 /// Implements the chain-of-responsibility pattern for state-specific processing.
 /// </summary>
 /// <typeparam name="TState">The specific MessageState type this processor handles</typeparam>
-public abstract class StateSpecificProcessor<TState> : MessageProcessor where TState : MessageState
+public abstract class StateSpecificProcessor<TState> : MessageProcessor where TState : Enum
 {
     private StateSpecificProcessor<TState>? _nextStateProcessor;
     

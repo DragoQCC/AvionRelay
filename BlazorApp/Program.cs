@@ -1,16 +1,26 @@
+using AvionRelay.External.Transports.SignalR;
 using BlazorApp.Components;
+using MudBlazor.Services;
 
 namespace BlazorApp;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        builder.Services.AddMudServices();
 
         // Add services to the container.
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
+        //add as a SignalR client
+        builder.Services.WithSignalRMessageBus(opt => 
+        {
+            opt.HubUrl = "https://localhost:7008/avionrelay";
+            opt.ClientName = "Example Blazor App";
+        });
+        
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -20,6 +30,8 @@ public class Program
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
+        
+        
 
         app.UseHttpsRedirection();
 
@@ -27,7 +39,12 @@ public class Program
 
         app.MapStaticAssets();
         app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+        
+        //get the SignalR message bus and connect it
+        var signalRMessageBus = app.Services.GetRequiredService<AvionRelaySignalRMessageBus>();
+        await signalRMessageBus.StartAsync();
+        await signalRMessageBus.RegisterMessenger();
 
-        app.Run();
+        await app.RunAsync();
     }
 }

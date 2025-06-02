@@ -1,7 +1,36 @@
-﻿@page "/"
+﻿@using MudBlazor
+
+@page "/"
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
+<br/>
 
-Welcome to your new app.
+
+
+<MudCard Outlined="true">
+    <MudCardHeader>
+        <CardHeaderAvatar>
+            <MudIcon Icon="@Icons.Material.Filled.AltRoute"></MudIcon>
+        </CardHeaderAvatar>
+        <CardHeaderActions>
+            @* A button that when pressed sends a GetStatusCommand command to the Hub *@
+            <MudButton OnClick="@SendGetStatusCommand">Send Command</MudButton>
+        </CardHeaderActions>
+    </MudCardHeader>
+
+    @if (_statusResponse is not null)
+    {
+        <MudCardContent>
+            <MudText>Get Status Command Results:</MudText>
+            <MudText>Status: @_statusResponse.Status</MudText>
+            <MudText>Processed at: @_statusResponse.Timestamp</MudText>
+            @foreach (var detail in _statusResponse.Details ?? [])
+            {
+                <MudText>@detail.Key : @detail.Value.ToString()</MudText>
+            }
+        </MudCardContent>
+    }
+</MudCard>
+

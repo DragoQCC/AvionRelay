@@ -1,6 +1,7 @@
 ﻿using AvionRelay.External.Hub.Components.Connections;
 using AvionRelay.External.Hub.Features.Transports;
 using AvionRelay.External.Hub.Services;
+using Newtonsoft.Json;
 
 namespace AvionRelay.External.Hub;
 
@@ -16,15 +17,17 @@ public static class ServiceExtensions
         
         // Add SignalR
         services.AddSignalR(signalROptions =>
-        {
-            signalROptions.EnableDetailedErrors = options.EnableDetailedErrors;
-            signalROptions.MaximumReceiveMessageSize = options.MaxMessageSize;
-            signalROptions.ClientTimeoutInterval = TimeSpan.FromSeconds(options.ClientTimeoutSeconds);
-            signalROptions.KeepAliveInterval = TimeSpan.FromSeconds(options.KeepAliveIntervalSeconds);
-        }).AddJsonProtocol(jsonOptions =>
-        {
-            jsonOptions.PayloadSerializerOptions.PropertyNamingPolicy = null;
-        });
+                {
+                    signalROptions.EnableDetailedErrors = options.EnableDetailedErrors;
+                    signalROptions.MaximumReceiveMessageSize = options.MaxMessageSize;
+                    signalROptions.ClientTimeoutInterval = TimeSpan.FromSeconds(options.ClientTimeoutSeconds);
+                    signalROptions.KeepAliveInterval = TimeSpan.FromSeconds(options.KeepAliveIntervalSeconds);
+                }
+            )
+            /*.AddNewtonsoftJsonProtocol(opt =>
+            {
+                opt.PayloadSerializerSettings.TypeNameHandling = TypeNameHandling.All;
+            })*/;
         
         // Add SignalR monitoring components
         services.AddSingleton<ConnectionTracker>();

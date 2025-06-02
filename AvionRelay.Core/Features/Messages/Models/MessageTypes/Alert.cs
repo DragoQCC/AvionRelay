@@ -12,12 +12,12 @@ public abstract record Alert : AvionRelayMessage, IAcknowledge, ISingleReceiver
     {
         AllowedStates = new List<MessageState>
         {
-            new MessageState.Created(),
-            new MessageState.Sent(),
-            new MessageState.Received(),
-            new MessageState.Processing(),
-            new FinalizedMessageState.Failed(),
-            new FinalizedMessageState.AcknowledgementReceived()
+            MessageState.Created,
+            MessageState.Sent,
+            MessageState.Received,
+            MessageState.Processing,
+            MessageState.Failed,
+            MessageState.AcknowledgementReceived
         };
 
         Metadata.BaseMessageType = BaseMessageType.Alert;

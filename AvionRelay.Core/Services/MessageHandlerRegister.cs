@@ -56,7 +56,7 @@ public static class MessageHandlerRegister
         return _subscriptions.TryGetValue(messageType, out handlers);
     }
     
-    public static bool TryGetHandlers(Type messageType, out HashSet<IAvionRelayMessageSubscription> handlers) => _subscriptions.TryGetValue(messageType, out handlers);
+    public static bool TryGetHandlers(Type messageType, out HashSet<IAvionRelayMessageSubscription>? handlers) => _subscriptions.TryGetValue(messageType, out handlers);
     
     public static async Task<List<MessageReceiver>> GetUniqueMessageHandlers(Type messageType)
     {
@@ -87,22 +87,53 @@ public static class MessageHandlerRegister
 
     public static async Task ProcessPackage(Package package)
     {
-        if (TryGetHandlers(package.MessageType, out var handlers))
+        Console.WriteLine("Processing package");
+        try
         {
-            foreach (var handler in handlers)
+            //get the type for the message 
+            Type messageType = package.Message.GetType();
+            Console.WriteLine($"message type: {messageType}");
+        
+            if (TryGetHandlers(messageType, out var handlers))
             {
-                try
+                Console.WriteLine($"found handler for {messageType}");
+                foreach (var handler in handlers ?? [])
                 {
-                    //set the message state to processing
-                    package.Message.Metadata.State = new MessageState.Processing();
-                    await handler.HandleAsync(package);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
+                    try
+                    {
+                        //set the message state to processing
+                        package.Message.Metadata.State = MessageState.Processing;
+                        await handler.HandleAsync(package);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
                 }
             }
+            else
+            {
+                Console.WriteLine($"Received package but no handlers found for type {messageType}");
+            }
         }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    public static List<Type> GetMessageTypes()
+    {
+        var messageTypes = new List<Type>();
+        foreach (var subscription in _subscriptions)
+        {
+            if (messageTypes.Contains(subscription.Key))
+            {
+                continue;
+            }
+            messageTypes.Add(subscription.Key);
+        }
+        return messageTypes;
     }
 }
 
