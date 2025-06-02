@@ -29,5 +29,6 @@ public class MessageResponse<TResponse> : IMessageResponse
 
     /// <inheritdoc />
     public MessageReceiver Acknowledger { get; internal set; }
+    
     public TResponse Response { get; set; }
 }

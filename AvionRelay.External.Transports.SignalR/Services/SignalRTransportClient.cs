@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using TypedSignalR.Client;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace AvionRelay.External.Transports.SignalR;
 
@@ -142,8 +143,21 @@ public class SignalRTransportClient : IAsyncDisposable
 
             //wait for the result to be set 
             var untypedResponses = await tcs.Task;
-            List<MessageResponse<TResponse>> responses = untypedResponses.Cast<MessageResponse<TResponse>>().ToList();
-            return responses;
+            
+            // Convert MessageResponse<object> to MessageResponse<TResponse>
+            var typedResponses = new List<MessageResponse<TResponse>>();
+            foreach (var untypedResponse in untypedResponses)
+            {
+                // Create a new MessageResponse<TResponse> with the properly typed response
+                var typedResponse = new MessageResponse<TResponse>
+                {
+                    MessageId = untypedResponse.MessageId,
+                    Acknowledger = untypedResponse.Acknowledger,
+                    Response =  untypedResponse.Response.ConvertTo<TResponse>() // Cast the inner response
+                };
+                typedResponses.Add(typedResponse);
+            }
+            return typedResponses;
         }
         catch (Exception ex)
         {

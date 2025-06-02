@@ -83,14 +83,12 @@ public class ResponseTracker
         // Check if we've received all expected responses
         if (pendingResponse.Responses.Count >= pendingResponse.ExpectedResponseCount)
         {
-            if (_pendingResponses.TryRemove(messageId, out _))
-            {
-                pendingResponse.TimeoutCancellation?.Cancel();
-                pendingResponse.ResponseTcs.TrySetResult(pendingResponse.Responses);
-                return true;
-            }
+            //todo: See if removing this allows tasking to flow correctly vs removing the tracked result early
+            //pendingResponse.TimeoutCancellation?.Cancel();
+            pendingResponse.ResponseTcs.TrySetResult(pendingResponse.Responses);
+            _logger.LogDebug("All responses received for message {MessageId}", messageId);
+            return true;
         }
-        
         return false;
     }
     
@@ -101,12 +99,25 @@ public class ResponseTracker
     {
         if (!_pendingResponses.TryGetValue(messageId, out var pendingResponse))
         {
+            _logger.LogDebug("Waiting for responses for the following messages: {PendingIDs} ", string.Join(",",_pendingResponses.Keys.Select(k => k.ToString())));
             throw new InvalidOperationException($"No pending response tracked for message {messageId}");
         }
         
-        var responses = await pendingResponse.ResponseTcs.Task;
-        
-       return responses;
+        try
+        {
+            var responses = await pendingResponse.ResponseTcs.Task;
+            if (pendingResponse.Responses.Count >= pendingResponse.ExpectedResponseCount)
+            {
+                CompleteTracking(messageId);
+            }
+            return responses;
+        }
+        catch (TimeoutException)
+        {
+            // Return partial responses on timeout
+            _logger.LogWarning("Returning {Count} partial responses for message {MessageId} after timeout",  pendingResponse.Responses.Count, messageId);
+            return new List<MessageResponse<object>>(pendingResponse.Responses);
+        }
     }
     
     /// <summary>
@@ -117,6 +128,18 @@ public class ResponseTracker
         return _pendingResponses.TryGetValue(messageId, out var pendingResponse) 
             ? pendingResponse.SenderConnectionId 
             : null;
+    }
+    
+    /// <summary>
+    /// Completes tracking for a message after responses have been sent
+    /// </summary>
+    public void CompleteTracking(Guid messageId)
+    {
+        if (_pendingResponses.TryRemove(messageId, out var pendingResponse))
+        {
+            pendingResponse.TimeoutCancellation?.Dispose();
+            _logger.LogDebug("Completed tracking for message {MessageId}", messageId);
+        }
     }
     
     /// <summary>
