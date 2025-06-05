@@ -1,8 +1,8 @@
 ﻿using AvionRelay.Core.Aspects;
 using AvionRelay.Core.Dispatchers;
-using SharedLibrary.Commands;
+using AvionRelay.Examples.SharedLibrary.Commands;
 
-namespace ExampleWebApp;
+namespace AvionRelay.Examples.WebApp;
 
 public class CommandHandler
 {

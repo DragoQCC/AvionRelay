@@ -1,6 +1,6 @@
 ﻿using AvionRelay.Core.Messages.MessageTypes;
 
-namespace SharedLibrary.Commands;
+namespace AvionRelay.Examples.SharedLibrary.Commands;
 
 public record GetStatusCommand : Command<StatusResponse>
 {

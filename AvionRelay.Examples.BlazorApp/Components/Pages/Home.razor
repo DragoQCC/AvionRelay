@@ -34,3 +34,15 @@
     }
 </MudCard>
 
+<MudCard Outlined="true">
+    <MudCardHeader>
+        <CardHeaderAvatar>
+            <MudIcon Icon="@Icons.Material.Filled.AltRoute"></MudIcon>
+        </CardHeaderAvatar>
+        <CardHeaderActions>
+            @* A button that when pressed sends a GetStatusCommand command to the Hub *@
+            <MudButton OnClick="@SendAccessDeniedAlert">Send Alert</MudButton>
+        </CardHeaderActions>
+    </MudCardHeader>
+</MudCard>
+

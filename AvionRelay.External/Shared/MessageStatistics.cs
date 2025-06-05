@@ -3,7 +3,7 @@
 namespace AvionRelay.External;
 
 //Tracks message statistics
-public class SignalRMessageStatistics
+public class MessageStatistics
 {
     private long _totalMessagesReceived;
     private long _totalMessagesSent;

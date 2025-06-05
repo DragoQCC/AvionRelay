@@ -2,9 +2,9 @@
 using AvionRelay.Core.Dispatchers;
 using Metalama.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SharedLibrary;
+using AvionRelay.Examples.SharedLibrary;
 
-namespace ConsoleExample;
+namespace AvionRelay.Examples.ConsoleExample;
 
 public class ExampleMessageHandler
 {

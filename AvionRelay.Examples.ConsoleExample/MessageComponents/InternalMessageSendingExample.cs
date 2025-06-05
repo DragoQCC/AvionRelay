@@ -5,10 +5,10 @@ using AvionRelay.Core.Services;
 using AvionRelay.Internal;
 using HelpfulTypesAndExtensions;
 using Metalama.Extensions.DependencyInjection;
-using SharedLibrary;
+using AvionRelay.Examples.SharedLibrary;
 
 
-namespace ConsoleExample;
+namespace AvionRelay.Examples.ConsoleExample;
 
 /// <summary>
 /// Example demonstrating the internal message broker.

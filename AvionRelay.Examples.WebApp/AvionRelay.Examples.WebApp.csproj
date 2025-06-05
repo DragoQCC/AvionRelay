@@ -14,7 +14,7 @@
     <ItemGroup>
       <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
       <ProjectReference Include="..\AvionRelay.External.Transports.SignalR\AvionRelay.External.Transports.SignalR.csproj" />
-      <ProjectReference Include="..\SharedLibrary\SharedLibrary.csproj" />
+      <ProjectReference Include="..\AvionRelay.Examples.SharedLibrary\AvionRelay.Examples.SharedLibrary.csproj" />
     </ItemGroup>
 
 </Project>

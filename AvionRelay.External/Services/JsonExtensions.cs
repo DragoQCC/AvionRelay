@@ -7,7 +7,7 @@ public static class JsonExtensions
     /// <summary>
     /// Converts an object (potentially a JsonElement) to the specified type
     /// </summary>
-    public static T ConvertTo<T>(this object obj, JsonSerializerOptions? options = null)
+    public static T ConvertTo<T>(this object? obj, JsonSerializerOptions? options = null)
     {
         if (obj == null)
         {
@@ -35,6 +35,11 @@ public static class JsonExtensions
             {
                 return (T)toObjectMethod.Invoke(obj, new object[] { typeof(T) })!;
             }
+        }
+
+        if (obj is string str)
+        {
+            return JsonSerializer.Deserialize<T>(str, options)!;
         }
         
         // Fallback: serialize then deserialize

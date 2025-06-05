@@ -8,9 +8,9 @@ using AvionRelay.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SharedLibrary;
+using AvionRelay.Examples.SharedLibrary;
 
-namespace ConsoleExample;
+namespace AvionRelay.Examples.ConsoleExample;
 
 internal class Program
 {

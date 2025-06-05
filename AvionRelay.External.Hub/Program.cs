@@ -64,6 +64,19 @@ public class Program
             });
         }
 
+        if (enabledTransports.Contains("Grpc"))
+        {
+            builder.Services.AddAvionRelayGrpcHub(opt =>
+            {
+                opt.EnableDetailedErrors = avionRelayOptions.Transports.SignalR.EnableDetailedErrors;
+                opt.EnableReflection = avionRelayOptions.Transports.Grpc.EnableReflection;
+                opt.MaxMessageSize = avionRelayOptions.Transports.Grpc.MaxMessageSize;
+            }
+            );
+        }
+        
+
+        builder.Services.AddSingleton<MessageStatistics>();
         builder.Services.AddSingleton<TransportMonitorAggregator>();
         builder.Services.AddSingleton<MessageHandlerTracker>();
         builder.Services.AddSingleton<ResponseTracker>();
@@ -108,10 +121,12 @@ public class Program
         // Add additional endpoints required by the Identity /Account Razor components.
         app.MapAdditionalIdentityEndpoints();
         
-        app.MapHub<AvionRelaySignalRHub>("/avionrelay", options =>
+        app.MapHub<AvionRelaySignalRHub>(avionRelayOptions.Transports.SignalR.HubPath, options =>
         {
             options.AllowStatefulReconnects = true;
         });
+        
+        app.MapAvionRelayGrpcService(avionRelayOptions.Transports.Grpc.ListenAddress);
         
         await app.RunAsync();
     }

@@ -1,7 +1,8 @@
 ﻿using AvionRelay.Core.Dispatchers;
-using SharedLibrary.Commands;
+using AvionRelay.Examples.SharedLibrary;
+using AvionRelay.Examples.SharedLibrary.Commands;
 
-namespace BlazorApp.Components.Pages;
+namespace AvionRelay.Examples.BlazorApp.Components.Pages;
 
 public partial class Home
 {
@@ -22,5 +23,11 @@ public partial class Home
         };
         var commandResult = await _messageBus.ExecuteCommand<GetStatusCommand,StatusResponse>(statusCommand);
         _statusResponse = commandResult.Response;
+    }
+
+    public async Task SendAccessDeniedAlert()
+    {
+        AccessDeniedAlert accessAlert = new(new User("Bob"),"Insufficient permissions");
+        await _messageBus.SendAlert(accessAlert);
     }
 }

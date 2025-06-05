@@ -94,6 +94,11 @@ public class GrpcOptions
     /// Enable gRPC reflection for debugging
     /// </summary>
     public bool EnableReflection { get; set; } = false;
+    
+    /// <summary>
+    /// Enables detailed error messages from the Grpc services
+    /// </summary>
+    public bool EnableDetailedErrors { get; set; } = false;
 }
 
 public class RabbitMqOptions

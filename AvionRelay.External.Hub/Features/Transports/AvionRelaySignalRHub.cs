@@ -16,7 +16,7 @@ namespace AvionRelay.External.Hub.Features.Transports;
 public partial class AvionRelaySignalRHub : Hub<IAvionRelaySignalRClientModel>, IAvionRelaySignalRHubModel
 {
     private readonly ConnectionTracker _connectionTracker;
-    private readonly SignalRMessageStatistics _statistics;
+    private readonly MessageStatistics _statistics;
     private readonly SignalRTransportMonitor _monitor;
     private readonly MessageHandlerTracker _handlerTracker;
     private readonly ResponseTracker _responseTracker;
@@ -24,7 +24,7 @@ public partial class AvionRelaySignalRHub : Hub<IAvionRelaySignalRClientModel>, 
 
     
     
-    public AvionRelaySignalRHub(ConnectionTracker connectionTracker, SignalRMessageStatistics statistics, SignalRTransportMonitor monitor, MessageHandlerTracker handlerTracker, ResponseTracker responseTracker, ILogger<AvionRelaySignalRHub> logger)
+    public AvionRelaySignalRHub(ConnectionTracker connectionTracker, MessageStatistics statistics, SignalRTransportMonitor monitor, MessageHandlerTracker handlerTracker, ResponseTracker responseTracker, ILogger<AvionRelaySignalRHub> logger)
     {
         _connectionTracker = connectionTracker;
         _statistics = statistics;
@@ -57,7 +57,33 @@ public partial class AvionRelaySignalRHub : Hub<IAvionRelaySignalRClientModel>, 
     
     public async Task SendMessage(TransportPackage package)
     {
+        try
+        {
+            Console.WriteLine("Received message send request");
+            //get the size of the message.Package.Message in bytes
+            int messageSize = Encoding.UTF8.GetByteCount(package.MessageJson);
         
+            _logger.LogInformation("Message Info: Name:{Name}, ID:{MessageID} ", package.MessageTypeShortName, package.MessageId);
+            
+            _statistics.RecordMessageReceived(package.MessageTypeShortName,messageSize);
+
+            var targetHandlerIds = _handlerTracker.GetMessageHandlers(package.MessageTypeShortName);
+            
+            Console.WriteLine($"Found {targetHandlerIds.Count} handlers");
+        
+            // Send to all handlers
+            Console.WriteLine("Calling ReceivePackage on clients");
+            List<string> signalRClientIds = new();
+            foreach (string handlerId in targetHandlerIds)
+            {
+                signalRClientIds.Add(_connectionTracker.GetTransportIDFromClientID(handlerId));
+            }
+            await Clients.Clients(signalRClientIds).ReceivePackage(package);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
     /// <inheritdoc />
@@ -108,7 +134,7 @@ public partial class AvionRelaySignalRHub : Hub<IAvionRelaySignalRClientModel>, 
     }
 
     /// <inheritdoc />
-    public async Task SendResponse(Guid messageId, object response)
+    public async Task SendResponse(Guid messageId, JsonResponse response)
     {
         _logger.LogInformation("Received response for message {MessageID}",messageId);
         var messengerID = _connectionTracker.GetClientIDFromTransportID(Context.ConnectionId);
@@ -126,8 +152,7 @@ public partial class AvionRelaySignalRHub : Hub<IAvionRelaySignalRClientModel>, 
         }
     }
 
-
-
+    
     /// <inheritdoc />
     public async Task RegisterClient(ClientRegistration clientRegistration)
     {

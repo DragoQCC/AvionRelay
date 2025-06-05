@@ -1,6 +1,6 @@
 ﻿using AvionRelay.Core.Messages.MessageTypes;
 
-namespace SharedLibrary;
+namespace AvionRelay.Examples.SharedLibrary;
 
 public record User(string Name);
 

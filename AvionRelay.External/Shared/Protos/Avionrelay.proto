@@ -1,0 +1,131 @@
+﻿edition = "2023";
+
+option csharp_namespace = "AvionRelay.External.Transports.Grpc";
+option py_generic_services = true;
+
+package avionrelay;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// Main gRPC service for AvionRelay Hub
+service AvionRelayHub {
+    // Register a client with the hub
+    rpc RegisterClient(ClientRegistrationRequest) returns (ClientRegistrationResponse);
+
+    // Send a message and wait for responses
+    rpc SendMessageWaitResponse(TransportPackageRequest) returns (MessageResponseList);
+
+    // Send a response for a message
+    rpc SendResponse(ResponseMessage) returns (ResponseAck);
+
+    // Bidirectional streaming for receiving messages (for handlers)
+    rpc MessageStream(stream StreamMessage) returns (stream StreamMessage);
+
+    // Health check
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Transport types enum
+enum TransportType {
+    UNKNOWN = 0;
+    SIGNALR = 1;
+    GRPC = 2;
+    RABBITMQ = 3;
+}
+
+// Message priority enum
+enum MessagePriority {
+    LOWEST = 0;
+    LOW = 1;
+    NORMAL = 2;
+    HIGH = 3;
+    VERY_HIGH = 4;
+    HIGHEST = 5;
+}
+
+// Base message type enum
+enum BaseMessageType {
+    COMMAND = 0;
+    NOTIFICATION = 1;
+    ALERT = 2;
+    INSPECTION = 3;
+}
+
+// Client registration
+message ClientRegistrationRequest {
+    string client_id = 1;
+    string client_name = 2;
+    TransportType transport_type = 3;
+    string host_address = 4;
+    map<string, string> metadata = 5;
+    repeated string supported_messages = 6;
+}
+
+message ClientRegistrationResponse {
+    bool success = 1;
+    string message = 2;
+    string session_id = 3;
+}
+
+// Transport package for messages
+message TransportPackageRequest {
+    string message_id = 1;
+    string message_type_short_name = 2;
+    BaseMessageType base_message_type = 3;
+    // JSON serialized message content
+    string message_json = 4; 
+    MessagePriority priority = 5;
+    google.protobuf.Timestamp created_at = 6;
+    string sender_id = 7;
+}
+
+// Message receiver
+message GrpcMessageReceiver {
+    string receiver_id = 1;
+    string name = 2;
+}
+
+// Typed response that preserves type information
+message GrpcJsonResponse {
+    string message_id = 1;
+    GrpcMessageReceiver acknowledger = 2;
+    // JSON serialized response
+    string response_json = 3; 
+}
+
+// Response message
+message ResponseMessage {
+    string message_id = 1;
+    GrpcJsonResponse response = 2;
+}
+
+message ResponseAck {
+    bool success = 1;
+    string message = 2;
+}
+
+// List of message responses
+message MessageResponseList {
+    repeated GrpcJsonResponse responses = 1;
+}
+
+// Bidirectional streaming messages
+message StreamMessage {
+    oneof message {
+        TransportPackageRequest package = 1;
+        GrpcJsonResponse response = 2;
+        string heartbeat = 3;
+    }
+}
+
+// Health check
+message HealthCheckRequest {
+    string client_id = 1;
+}
+
+message HealthCheckResponse {
+    bool healthy = 1;
+    string status = 2;
+    google.protobuf.Timestamp server_time = 3;
+}

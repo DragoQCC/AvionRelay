@@ -6,9 +6,9 @@ namespace AvionRelay.External;
 public record MessageResponseReceivedEvent : GenericEvent<MessageResponseReceivedEvent>
 {
     private Guid _messageId;
-    private List<MessageResponse<object>> responses;
+    private List<JsonResponse> responses;
     
-    public async Task NotifyResponseReceived(Guid messageId, List<MessageResponse<object>> responses)
+    public async Task NotifyResponseReceived(Guid messageId, List<JsonResponse> responses)
     {
         _messageId = messageId;
         this.responses = responses;
@@ -20,4 +20,4 @@ public record MessageResponseReceivedEvent : GenericEvent<MessageResponseReceive
     override protected MessageResponseReceivedEventCall CreateEventCall() => new(_messageId, responses);
 }
 
-public record MessageResponseReceivedEventCall(Guid messageId, List<MessageResponse<object>> responses) : EventCall<MessageResponseReceivedEvent>;
+public record MessageResponseReceivedEventCall(Guid messageId, List<JsonResponse> responses) : EventCall<MessageResponseReceivedEvent>;

@@ -3,7 +3,7 @@
 @using MudBlazor
 
 @inject ConnectionTracker ConnectionTracker
-@inject SignalRMessageStatistics Statistics
+@inject MessageStatistics Statistics
 
 <PageTitle>Home</PageTitle>
 
@@ -91,7 +91,7 @@
     private int _messagesPerMinute;
     private int _avgMessagesPerMinute = 245;
     private string _uptime = "0d 0h";
-    private SignalRMessageStatistics.SignalRMessageStatisticsSnapshot _stats = new();
+    private MessageStatistics.SignalRMessageStatisticsSnapshot _stats = new();
     private List<ChartSeries> _chartSeries = new();
     private string[] _chartLabels = Array.Empty<string>();
     private ChartOptions _chartOptions = new() { YAxisFormat = "N0" };

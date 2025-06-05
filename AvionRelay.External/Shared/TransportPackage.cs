@@ -37,7 +37,7 @@ public record TransportPackage
             MessageTypeShortName = package.MessageType,
             MessageTypeFullName = package.Message.GetType().AssemblyQualifiedName,
             BaseMessageType = package.Message.Metadata.BaseMessageType.ToString(),
-            MessageJson = JsonSerializer.Serialize(package.Message),
+            MessageJson = JsonSerializer.Serialize(package.Message, package.Message.GetType()),
             Priority = package.Message.Metadata.Priority,
             CreatedAt = package.Message.Metadata.CreatedAt.DateTime,
             SenderId = senderId

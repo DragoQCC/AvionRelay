@@ -33,7 +33,7 @@ public class ResponseTracker
             ExpectedResponseCount = expectedResponseCount,
             Timeout = timeout ?? TimeSpan.FromSeconds(30),
             CreatedAt = DateTime.UtcNow,
-            ResponseTcs = new TaskCompletionSource<List<MessageResponse<object>>>()
+            ResponseTcs = new TaskCompletionSource<List<JsonResponse>>()
         };
         
         _pendingResponses[messageId] = pendingResponse;
@@ -46,21 +46,19 @@ public class ResponseTracker
             {
                 response.ResponseTcs.TrySetException(
                     new TimeoutException($"Response timeout for message {messageId}"));
-                _logger.LogWarning("Response timeout for message {MessageId} after {Timeout}",
-                    messageId, pendingResponse.Timeout);
+                _logger.LogWarning("Response timeout for message {MessageId} after {Timeout}", messageId, pendingResponse.Timeout);
             }
         });
         
         pendingResponse.TimeoutCancellation = cts;
         
-        _logger.LogDebug("Tracking response for message {MessageId} from {Sender}",
-            messageId, senderConnectionId);
+        _logger.LogDebug("Tracking response for message {MessageId} from {Sender}", messageId, senderConnectionId);
     }
     
     /// <summary>
     /// Records a response received for a message
     /// </summary>
-    public bool RecordResponse<TResponse>(Guid messageId, string responderId, TResponse response)
+    public bool RecordResponse(Guid messageId, string responderId, JsonResponse response)
     {
         if (!_pendingResponses.TryGetValue(messageId, out var pendingResponse))
         {
@@ -68,14 +66,8 @@ public class ResponseTracker
             return false;
         }
         
-        var messageResponse = new MessageResponse<object>
-        {
-            MessageId = messageId,
-            Acknowledger = new Core.Dispatchers.MessageReceiver(responderId, responderId),
-            Response = response!
-        };
-        
-        pendingResponse.Responses.Add(messageResponse);
+       
+        pendingResponse.Responses.Add(response);
         
         _logger.LogDebug("Recorded response {Number}/{Expected} for message {MessageId}",
             pendingResponse.Responses.Count, pendingResponse.ExpectedResponseCount, messageId);
@@ -95,7 +87,7 @@ public class ResponseTracker
     /// <summary>
     /// Waits for all responses to a message
     /// </summary>
-    public async Task<List<MessageResponse<object>>> WaitForResponsesAsync(Guid messageId)
+    public async Task<List<JsonResponse>> WaitForResponsesAsync(Guid messageId)
     {
         if (!_pendingResponses.TryGetValue(messageId, out var pendingResponse))
         {
@@ -116,7 +108,7 @@ public class ResponseTracker
         {
             // Return partial responses on timeout
             _logger.LogWarning("Returning {Count} partial responses for message {MessageId} after timeout",  pendingResponse.Responses.Count, messageId);
-            return new List<MessageResponse<object>>(pendingResponse.Responses);
+            return pendingResponse.Responses;
         }
     }
     
@@ -185,8 +177,8 @@ public class ResponseTracker
         public int ExpectedResponseCount { get; init; }
         public TimeSpan Timeout { get; init; }
         public DateTime CreatedAt { get; init; }
-        public List<MessageResponse<object>> Responses { get; } = new();
-        public TaskCompletionSource<List<MessageResponse<object>>> ResponseTcs { get; init; } = new();
+        public List<JsonResponse> Responses { get; } = new();
+        public TaskCompletionSource<List<JsonResponse>> ResponseTcs { get; init; } = new();
         public CancellationTokenSource? TimeoutCancellation { get; set; }
     }
 }

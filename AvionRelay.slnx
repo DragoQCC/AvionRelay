@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Client Transports/">
+    <Project Path="AvionRelay.External.Transports.Grpc\AvionRelay.External.Transports.Grpc.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.External.Transports.SignalR\AvionRelay.External.Transports.SignalR.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/Core Components/">
@@ -8,12 +9,14 @@
     <Project Path="AvionRelay.External\AvionRelay.External.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.Internal\AvionRelay.Internal.csproj" Type="Classic C#" />
   </Folder>
+  <Folder Name="/Examples/">
+    <Project Path="AvionRelay.Examples.BlazorApp\AvionRelay.Examples.BlazorApp.csproj" Type="Classic C#" />
+    <Project Path="AvionRelay.Examples.ConsoleExample\AvionRelay.Examples.ConsoleExample.csproj" Type="Classic C#" />
+    <Project Path="AvionRelay.Examples.WebApp\AvionRelay.Examples.WebApp.csproj" Type="Classic C#" />
+    <Project Path="AvionRelay.Examples.SharedLibrary\AvionRelay.Examples.SharedLibrary.csproj" Type="Classic C#" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="AvionRelay.Tests.Integration\AvionRelay.Tests.Integration.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.Tests.Unit\AvionRelay.Tests.Unit.csproj" Type="Classic C#" />
-    <Project Path="BlazorApp\BlazorApp.csproj" Type="Classic C#" />
-    <Project Path="ConsoleExample\ConsoleExample.csproj" Type="Classic C#" />
-    <Project Path="ExampleWebApp\ExampleWebApp.csproj" Type="Classic C#" />
-    <Project Path="SharedLibrary\SharedLibrary.csproj" Type="Classic C#" />
   </Folder>
 </Solution>

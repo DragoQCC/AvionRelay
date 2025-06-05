@@ -1,8 +1,8 @@
+using AvionRelay.Examples.BlazorApp.Components;
 using AvionRelay.External.Transports.SignalR;
-using BlazorApp.Components;
 using MudBlazor.Services;
 
-namespace BlazorApp;
+namespace AvionRelay.Examples.BlazorApp;
 
 public class Program
 {

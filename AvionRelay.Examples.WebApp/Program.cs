@@ -3,9 +3,10 @@ using AvionRelay.Core.Messages.MessageTypes;
 using AvionRelay.Core.Services;
 using AvionRelay.External.Transports.SignalR;
 using Scalar.AspNetCore;
-using SharedLibrary.Commands;
+using AvionRelay.Examples.SharedLibrary;
+using AvionRelay.Examples.SharedLibrary.Commands;
 
-namespace ExampleWebApp;
+namespace AvionRelay.Examples.WebApp;
 
 public class Program
 {
@@ -63,16 +64,20 @@ public class Program
         //get the bus and the logger
         var bus = _serviceProvider.GetRequiredService<AvionRelayMessageBus>();
         var logger = _serviceProvider.GetRequiredService<ILogger<CommandHandler>>();
+        var alertLogger = _serviceProvider.GetRequiredService<ILogger<AlertHandler>>();
         
         //Create the handler class instances if non-static 
         var handler = new CommandHandler(bus, logger);
+        var alertHandler = new AlertHandler(bus, alertLogger);
         
         //Create MessageReceivers
         var receiver = new MessageReceiver(CommandHandler.HandlerID.ToString(), nameof(CommandHandler));
+        var alertReceiver = new MessageReceiver(AlertHandler.HandlerID.ToString(), nameof(AlertHandler));
         
         //Register the handlers
         await MessageHandlerRegister.RegisterHandler<GetStatusCommand>(receiver,handler.HandleGetStatusCommand);
+        await MessageHandlerRegister.RegisterHandler<AccessDeniedAlert>(alertReceiver,alertHandler.HandleAccessDeniedAlert);
         
-        await bus.RegisterMessenger([nameof(GetStatusCommand)]);
+        await bus.RegisterMessenger([nameof(GetStatusCommand), nameof(AccessDeniedAlert)]);
     }
 }

@@ -10,7 +10,7 @@ public interface IAvionRelaySignalRClientModel
 {
     public Task ReceivePackage(TransportPackage package);
     public Task SendPackage(Package package);
-    public Task ReceiveResponses(Guid messageId,List<MessageResponse<object>> responses);
+    public Task ReceiveResponses(Guid messageId,List<JsonResponse> responses);
     
 
 }

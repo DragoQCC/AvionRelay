@@ -31,7 +31,7 @@ public class SignalROnHandler : IAvionRelaySignalRClientModel
     }
 
     /// <inheritdoc />
-    public async Task ReceiveResponses(Guid messageId, List<MessageResponse<object>> responses)
+    public async Task ReceiveResponses(Guid messageId, List<JsonResponse> responses)
     {
         await MessageResponseReceivedEvent.NotifyResponseReceived(messageId, responses);
     }
