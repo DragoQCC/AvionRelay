@@ -8,13 +8,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="9.0.5" />
       <PackageReference Include="MudBlazor" Version="8.7.0" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
+      <ProjectReference Include="..\AvionRelay.External.Server.Grpc\AvionRelay.External.Server.Grpc.csproj" />
+      <ProjectReference Include="..\AvionRelay.External.Server.SignalR\AvionRelay.External.Server.SignalR.csproj" />
       <ProjectReference Include="..\AvionRelay.External\AvionRelay.External.csproj" />
     </ItemGroup>
 

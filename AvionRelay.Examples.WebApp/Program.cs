@@ -1,10 +1,11 @@
+using System.Diagnostics;
 using AvionRelay.Core.Dispatchers;
-using AvionRelay.Core.Messages.MessageTypes;
 using AvionRelay.Core.Services;
 using AvionRelay.External.Transports.SignalR;
 using Scalar.AspNetCore;
 using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Examples.SharedLibrary.Commands;
+using AvionRelay.External;
 
 namespace AvionRelay.Examples.WebApp;
 
@@ -28,6 +29,11 @@ public class Program
             opt.ClientName = "Example Web App";
         });
         
+        // Add the message type resolver
+        builder.Services.AddMessageTypeResolver();
+        
+        
+        
         
 
         var app = builder.Build();
@@ -50,10 +56,8 @@ public class Program
         //get the SignalR message bus and connect it
         var signalRMessageBus = app.Services.GetRequiredService<AvionRelaySignalRMessageBus>();
         await signalRMessageBus.StartAsync();
-
         await RegisterKnownHandler();
-        
-        
+        TransportPackageExtensions.Initialize(_serviceProvider);
        
         await app.RunAsync();
     }
@@ -71,13 +75,39 @@ public class Program
         var alertHandler = new AlertHandler(bus, alertLogger);
         
         //Create MessageReceivers
-        var receiver = new MessageReceiver(CommandHandler.HandlerID.ToString(), nameof(CommandHandler));
-        var alertReceiver = new MessageReceiver(AlertHandler.HandlerID.ToString(), nameof(AlertHandler));
+        var receiver = new MessageReceiver()
+        {
+            ReceiverId = CommandHandler.HandlerID.ToString(),
+            Name = nameof(CommandHandler)
+        };
+
+        var alertReceiver = new MessageReceiver()
+        {
+            ReceiverId = AlertHandler.HandlerID.ToString(), 
+            Name = nameof(AlertHandler)
+        };
         
         //Register the handlers
         await MessageHandlerRegister.RegisterHandler<GetStatusCommand>(receiver,handler.HandleGetStatusCommand);
         await MessageHandlerRegister.RegisterHandler<AccessDeniedAlert>(alertReceiver,alertHandler.HandleAccessDeniedAlert);
         
         await bus.RegisterMessenger([nameof(GetStatusCommand), nameof(AccessDeniedAlert)]);
+    }
+
+    [Conditional("DEBUG")]
+    private static void PrintDiscoveredMessageTypes(WebApplication app)
+    {
+        var typeResolver = app.Services.GetRequiredService<ITypeResolver>();
+        var messageType = typeResolver.GetType(nameof(GetStatusCommand));
+        if (messageType is not null)
+        {
+            Console.WriteLine($"Successfully found message type  - {messageType.Name}: {messageType.AssemblyQualifiedName}");
+        }
+
+        var messageTypes = typeResolver.GetAllMessageTypes();
+        foreach (var msgType in messageTypes)
+        {
+            Console.WriteLine($"Type resolver registered: {msgType.Name} : {msgType.AssemblyQualifiedName}");
+        }
     }
 }

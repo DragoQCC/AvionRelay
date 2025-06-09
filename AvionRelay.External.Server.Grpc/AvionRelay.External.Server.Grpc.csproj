@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
+      <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.71.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="..\AvionRelay.External\Shared\Protos\Avionrelay.proto" GrpcServices="Server" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
+      <ProjectReference Include="..\AvionRelay.External.Server\AvionRelay.External.Server.csproj" />
+      <ProjectReference Include="..\AvionRelay.External\AvionRelay.External.csproj" />
+    </ItemGroup>
+
+</Project>

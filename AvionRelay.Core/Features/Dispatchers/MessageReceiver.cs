@@ -2,7 +2,7 @@
 
 public record MessageReceiver
 {
-    public string ReceiverId { get; set; }
+    public required string ReceiverId { get; set; }
     public string? Name { get; set; }
 
     public MessageReceiver()

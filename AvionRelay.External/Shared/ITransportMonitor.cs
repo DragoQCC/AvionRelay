@@ -15,5 +15,13 @@ public interface ITransportMonitor
     Task<IEnumerable<ConnectedClient>> GetConnectedClientsAsync();
     Task<bool> DisconnectClientAsync(string clientId);
     Task<TransportStatistics> GetStatisticsAsync();
+
+    public Task RaiseClientConnected(ClientConnectedEventCall args);
+
+    public Task RaiseClientDisconnected(ClientDisconnectedEventCall args);
+
+    public Task RaiseMessageReceived(MessageReceivedEventCall args);
+
+    public Task RaiseMessageSent(MessageSentEventCall args);
 }
 

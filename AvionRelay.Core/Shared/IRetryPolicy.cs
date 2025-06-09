@@ -15,6 +15,7 @@ public class DefaultRetryPolicy : RetryPolicy
 {
     public override bool ShouldRetry<T>(AvionRelayMessage avionRelayMessage, Exception? exception)
     {
-        return avionRelayMessage.Metadata.RetryCount < MaxRetries;
+        //TODO: This needs to be expanded to a real tracker or this method needs to be removed
+        return true;
     }
 }

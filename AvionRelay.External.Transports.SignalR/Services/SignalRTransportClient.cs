@@ -149,7 +149,7 @@ public class SignalRTransportClient : IAsyncDisposable
                 {
                     MessageId = untypedResponse.MessageId,
                     Acknowledger = untypedResponse.Acknowledger,
-                    Response =  untypedResponse.ResponseJson.ConvertTo<TResponse>() // Cast the inner response
+                    Response =  untypedResponse.ResponseJson.ConvertTo<TResponse>(new JsonSerializerOptions(){PropertyNameCaseInsensitive = true}) // Cast the inner response
                 };
                 typedResponses.Add(typedResponse);
             }
@@ -178,13 +178,9 @@ public class SignalRTransportClient : IAsyncDisposable
         }
     }
 
-    public async Task SendMessageResponse<TResponse>(Guid messageID, TResponse response)
+    public async Task SendMessageResponse(JsonResponse response)
     {
-        JsonResponse responseWrapper = new()
-        {
-            ResponseJson = JsonSerializer.Serialize(response)
-        };
-        await _hubProxy.SendResponse(messageID, responseWrapper);
+        await _hubProxy.SendResponse(response.MessageId, response);
     }
     
     private HubConnection BuildHubConnection()

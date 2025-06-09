@@ -1,11 +1,12 @@
-﻿@using AvionRelay.External.Hub.Services
+﻿
+@using AvionRelay.External.Server.Models
 @using MudBlazor
 
 <MudDialog>
     <DialogContent>
         <MudGrid>
             <MudItem xs="12">
-                <MudTextField Label="Connection ID" Value="@Connection.ConnectionId" ReadOnly="true" />
+                <MudTextField Label="Connection ID" Value="@Connection.ClientId" ReadOnly="true" />
             </MudItem>
             <MudItem xs="12">
                 <MudTextField Label="Client Name" Value="@Connection.ClientName" ReadOnly="true" />

@@ -1,4 +1,4 @@
-﻿using AvionRelay.Core.Aspects;
+﻿/*using AvionRelay.Core.Aspects;
 using AvionRelay.Core.Dispatchers;
 using Metalama.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -106,4 +106,4 @@ public class SecondExampleMessageHandler
         var responder = new MessageReceiver(HandlerID.ToString(), nameof(SecondExampleMessageHandler));
         await _bus.AcknowledgeMessage<UserTerminationNotification>(notification.Metadata.MessageId, responder);
     }
-}
+}*/

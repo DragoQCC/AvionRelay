@@ -1,11 +1,21 @@
 ﻿using System.Collections.Concurrent;
+using AvionRelay.External.Server.Models;
+using Microsoft.Extensions.Logging;
 
-namespace AvionRelay.External.Hub.Components.Connections;
+namespace AvionRelay.External.Server.Services;
 
 public class ConnectionTracker
 {
-    public ConcurrentDictionary<string, string> TransportIDLink = new();
+    /// <summary>
+    /// Key: The transport-specific ID, Value: the client ID 
+    /// </summary>
+    private readonly ConcurrentDictionary<string, string> _transportIDLink = new();
+    
+    /// <summary>
+    /// Key: Client ID Value: The client connection info
+    /// </summary>
     private readonly ConcurrentDictionary<string, ClientConnection> _connections = new();
+    
     private readonly ILogger<ConnectionTracker> _logger;
 
     public ConnectionTracker(ILogger<ConnectionTracker> logger)
@@ -13,10 +23,11 @@ public class ConnectionTracker
         _logger = logger;
     }
 
-    public void TrackNewConnection(string connectionId, string clientName, TransportTypes transportType, Uri hostAddress, Dictionary<string, object>? metadata = null)
+    public void TrackNewConnection(string clientId,string transportId, string clientName, TransportTypes transportType, Uri hostAddress, Dictionary<string, object>? metadata = null)
     {
-        _connections[connectionId] = new ClientConnection(
-            connectionId,
+        _connections[clientId] = new ClientConnection(
+            clientId,
+            transportId,
             clientName,
             DateTime.UtcNow,
             transportType,
@@ -24,17 +35,17 @@ public class ConnectionTracker
             hostAddress,
             metadata ?? new Dictionary<string, object>()
         );
-        _logger.LogInformation("Client connected: {ConnectionId}", connectionId);
+        _logger.LogInformation("Client connected: {ConnectionId}", clientId);
     }
 
     public void TrackTransportToClientID(string transportId, string clientId)
     {
-        TransportIDLink[transportId] = clientId;
+        _transportIDLink[transportId] = clientId;
     }
 
     public string GetTransportIDFromClientID(string clientId)
     {
-        foreach (var transportIdPair in TransportIDLink)
+        foreach (var transportIdPair in _transportIDLink)
         {
             if (transportIdPair.Value == clientId)
             {
@@ -46,7 +57,7 @@ public class ConnectionTracker
 
     public string GetClientIDFromTransportID(string transportId)
     {
-        foreach (KeyValuePair<string, string> transportIdPair in TransportIDLink)
+        foreach (KeyValuePair<string, string> transportIdPair in _transportIDLink)
         {
             if (transportIdPair.Key == transportId)
             {
@@ -66,11 +77,11 @@ public class ConnectionTracker
         }
     }
 
-    public void UpdateConnectionTracking(string connectionId, string clientName)
+    public void UpdateConnectionTracking(string clientID, string clientName)
     {
-        if (_connections.TryGetValue(connectionId, out var existing))
+        if (_connections.TryGetValue(clientID, out var existing))
         {
-            _connections[connectionId] = existing with
+            _connections[clientID] = existing with
             {
                 ClientName = clientName,
                 
@@ -82,6 +93,6 @@ public class ConnectionTracker
     
     public int GetConnectionCount() => _connections.Count;
     
-    public ClientConnection? GetConnection(string connectionId) =>
-        _connections.TryGetValue(connectionId, out var conn) ? conn : null;
+    public ClientConnection? GetConnection(string clientId) =>
+        _connections.TryGetValue(clientId, out var conn) ? conn : null;
 }

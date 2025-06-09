@@ -21,7 +21,11 @@ public class AlertHandler
     public async Task HandleAccessDeniedAlert(AccessDeniedAlert alert)
     {
         _logger.LogInformation("Handling AccessDeniedAlert: {Alert}", alert);
-        var responder = new MessageReceiver(HandlerID.ToString(), nameof(AlertHandler));
+        var responder = new MessageReceiver()
+        {
+            ReceiverId = HandlerID.ToString(),
+            Name = nameof(AlertHandler)
+        };
         await _bus.AcknowledgeMessage<AccessDeniedAlert>(alert.Metadata.MessageId, responder);
     }
 }

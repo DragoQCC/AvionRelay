@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Text.Json;
 using AvionRelay.Core;
 using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Messages;
@@ -86,7 +87,13 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
     public override async Task RespondToMessage<T, TResponse>(Guid messageId, TResponse response, MessageReceiver responder)
     {
         _logger.LogInformation("Sending response for message {messageID}", messageId);
-        await _client.SendMessageResponse(messageId, response);
+        JsonResponse responseWrapper = new()
+        {
+            MessageId = messageId,
+            ResponseJson = JsonSerializer.Serialize(response),
+            Acknowledger = responder
+        };
+        await _client.SendMessageResponse(responseWrapper);
     }
 
     /// <inheritdoc />

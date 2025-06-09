@@ -1,4 +1,4 @@
-﻿namespace AvionRelay.External.Hub;
+﻿namespace AvionRelay.External.Server.SignalR;
 
 public class SignalRHubOptions
 {

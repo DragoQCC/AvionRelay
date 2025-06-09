@@ -1,0 +1,208 @@
+﻿edition = "2023";
+
+option csharp_namespace = "AvionRelay.External.Transports.Grpc";
+
+package avionrelay;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// Main gRPC service for AvionRelay Hub
+service AvionRelayHub {
+    // Main bidirectional streaming RPC for all communication
+    rpc Communicate(stream ClientMessage) returns (stream ServerMessage);
+}
+
+// Transport types enum
+enum TransportType {
+    UNKNOWN = 0;
+    SIGNALR = 1;
+    GRPC = 2;
+    RABBITMQ = 3;
+}
+
+// Message priority enum
+enum MessagePriority {
+    LOWEST = 0;
+    LOW = 1;
+    NORMAL = 2;
+    HIGH = 3;
+    VERY_HIGH = 4;
+    HIGHEST = 5;
+}
+
+// Base message type enum
+enum BaseMessageType {
+    COMMAND = 0;
+    NOTIFICATION = 1;
+    ALERT = 2;
+    INSPECTION = 3;
+}
+
+// Message states enum
+enum MessageState {
+    CREATED = 0;
+    SENT = 1;
+    RECEIVED = 2;
+    PROCESSING = 3;
+    RESPONDED = 4;
+    RESPONSE_RECEIVED = 100;
+    ACKNOWLEDGEMENT_RECEIVED = 101;
+    FAILED = 200;
+}
+
+
+// Client to Server messages
+message ClientMessage {
+    oneof message {
+        // Initial registration when stream opens
+        ClientRegistrationRequest registration = 1;
+
+        // Send a message (fire and forget)
+        TransportPackageRequest send_message = 2;
+
+        // Send a message and expect responses
+        TransportPackageRequest send_message_wait_response = 3;
+
+        // Send a response to a received message
+        ResponseMessage send_response = 4;
+
+        // Acknowledge receipt of a message
+        Acknowledgement acknowledge = 5;
+
+        // Heartbeat to keep connection alive
+        Heartbeat heartbeat = 6;
+
+        // Client status update
+        ClientStatusUpdate status_update = 7;
+    }
+}
+
+// Server to Client messages
+message ServerMessage {
+    oneof message {
+        // Registration confirmation
+        ClientRegistrationResponse registration_response = 1;
+
+        // Forward a message to this client for processing
+        TransportPackageRequest receive_message = 2;
+
+        // Forward responses to a message this client sent
+        MessageResponseList receive_responses = 3;
+
+        // Server-side heartbeat
+        Heartbeat heartbeat = 4;
+
+        // Server notifications (errors, warnings, etc.)
+        ServerNotification notification = 5;
+
+        // Request client to disconnect
+        DisconnectRequest disconnect = 6;
+    }
+}
+
+// Client registration
+message ClientRegistrationRequest {
+    string client_name = 1;
+    string client_version = 2;
+    repeated string supported_messages = 3;
+    map<string, string> metadata = 4;
+    
+}
+
+message ClientRegistrationResponse {
+    bool success = 1;
+    string failure_message = 2;
+    string client_id = 3;
+    // Server can inform client of its capabilities
+    repeated string server_capabilities = 4;
+    // Server version for compatibility
+    string server_version = 5;
+}
+
+// Acknowledgement
+message Acknowledgement {
+    string message_id = 1;
+    MessageReceiver acknowledger = 2;
+    google.protobuf.Timestamp acknowledged_at = 3;
+}
+
+// Message context/metadata (matches C# MessageContext)
+message MessageContext {
+    string message_id = 1;
+    google.protobuf.Timestamp created_at = 2;
+    repeated Acknowledgement acknowledgements = 3;
+    MessageState state = 4;
+    MessagePriority priority = 5;
+    bool is_cancelled = 6;
+    int32 retry_count = 7;
+    BaseMessageType base_message_type = 8;
+}
+
+// Transport package for messages
+message TransportPackageRequest {
+    string sender_id = 1;
+    string message_type_short_name = 2;
+    // JSON serialized message content
+    string message_json = 3;
+    
+}
+
+// Message receiver
+message MessageReceiver {
+    string receiver_id = 1;
+    string name = 2;
+}
+
+// Response message
+message ResponseMessage {
+    string message_id = 1;
+    MessageReceiver acknowledger = 2;
+    // JSON serialized response
+    string response_json = 3;
+    google.protobuf.Timestamp responded_at = 4;
+}
+
+// List of message responses
+message MessageResponseList {
+    repeated ResponseMessage responses = 1;
+}
+
+
+// Heartbeat message
+message Heartbeat {
+    google.protobuf.Timestamp timestamp = 1;
+    int64 sequence_number = 2;
+}
+
+// Client status update
+message ClientStatusUpdate {
+    enum Status {
+        ACTIVE = 0;
+        BUSY = 1;
+        SHUTTING_DOWN = 2;
+        SUSPENDED = 3;
+    }
+    Status status = 1;
+    map<string, string> metrics = 2;
+    int32 message_queue_size = 3;
+}
+
+// Server notification
+message ServerNotification {
+    enum NotificationType {
+        INFO = 0;
+        WARNING = 1;
+        ERROR = 2;
+    }
+    NotificationType type = 1;
+    string message = 2;
+    map<string, string> details = 3;
+}
+
+// Disconnect request
+message DisconnectRequest {
+    string reason = 1;
+    bool reconnect_allowed = 2;
+    google.protobuf.Timestamp disconnect_at = 3;
+}

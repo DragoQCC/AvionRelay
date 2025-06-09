@@ -1,5 +1,7 @@
 ﻿@page "/connections"
-@using AvionRelay.External.Hub.Services
+
+@using AvionRelay.External.Server.Models
+@using AvionRelay.External.Server.Services
 @using MudBlazor
 @inject ConnectionTracker ConnectionTracker
 @inject IDialogService DialogService
@@ -66,7 +68,7 @@
         {
             return true;
         }
-        return connection.ConnectionId.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+        return connection.ClientId.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
                (connection.ClientName?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
                (connection.HostAddress?.ToString().Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false) ||
                (connection.TransportType.ToString()?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false);
@@ -94,7 +96,7 @@
     {
         var result = await DialogService.ShowMessageBox(
             "Disconnect Client",
-            $"Are you sure you want to disconnect {connection.ClientName ?? connection.ConnectionId}?",
+            $"Are you sure you want to disconnect {connection.ClientName ?? connection.ClientId}?",
             yesText: "Disconnect", cancelText: "Cancel");
             
         if (result == true)

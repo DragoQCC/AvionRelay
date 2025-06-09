@@ -1,6 +1,6 @@
 ﻿using SQLite;
 
-namespace AvionRelay.External.Hub.Services;
+namespace AvionRelay.External.Server.Services;
 
 [Table("MessageTypeStatistic")]
 public class MessageTypeStatistic

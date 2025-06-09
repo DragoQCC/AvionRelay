@@ -1,4 +1,4 @@
-﻿namespace AvionRelay.External.Hub.Components.Statistics;
+﻿namespace AvionRelay.External.Server.Models;
 
 public class AggregatedStatistics
 {

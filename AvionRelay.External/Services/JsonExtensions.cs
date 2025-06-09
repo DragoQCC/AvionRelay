@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 
 namespace AvionRelay.External;
 
@@ -46,4 +47,14 @@ public static class JsonExtensions
         var json = JsonSerializer.Serialize(obj, options);
         return JsonSerializer.Deserialize<T>(json, options)!;
     }
+
+    [Conditional("DEBUG")]
+    public static void PrettyPrintJsonString(this string jsonString)
+    {
+        object deserializeObject = JsonSerializer.Deserialize(jsonString, typeof(object))!;
+        string prettyPrint = JsonSerializer.Serialize(deserializeObject, new JsonSerializerOptions { WriteIndented = true });
+        Console.WriteLine(prettyPrint);
+    }
+    
+    
 }

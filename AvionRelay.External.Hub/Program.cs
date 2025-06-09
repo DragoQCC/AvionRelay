@@ -2,12 +2,12 @@ using AvionRelay.Core;
 using AvionRelay.Core.Services;
 using AvionRelay.External.Hub.Components.Account;
 using AvionRelay.External.Hub.Components.Account.Shared.Models;
-using AvionRelay.External.Hub.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using AvionRelay.External.Hub.Components;
-using AvionRelay.External.Hub.Features.Transports;
-using Microsoft.Extensions.Options;
+using AvionRelay.External.Server.Grpc;
+using AvionRelay.External.Server.Services;
+using AvionRelay.External.Server.SignalR;
 using MudBlazor.Services;
 
 namespace AvionRelay.External.Hub;
@@ -47,20 +47,19 @@ public class Program
         var enabledTransports = builder.Configuration.GetSection("AvionRelay:EnabledTransports").Get<string[]>();
         
         //get the AvionRelayOptions from the configuration
-        var avionRelayOptions = builder.Configuration.GetRequiredSection("AvionRelay").Get<AvionRelayExternalOptions>();
-        Console.WriteLine($"AvionRelayOptions:");
-        Console.WriteLine($"\tKeep Alive Interval: {avionRelayOptions.Transports.SignalR.KeepAliveIntervalSeconds} seconds");
-        Console.WriteLine($"\tClient Timeout: {avionRelayOptions.Transports.SignalR.ClientTimeoutSeconds} seconds");
+        var avionRelayConfiguration = builder.Configuration.GetRequiredSection("AvionRelay").Get<AvionRelayExternalOptions>();
+        
+        await ConfigureWebBindings(builder, avionRelayConfiguration);
         
         if (enabledTransports.Contains("SignalR"))
         {
             //add SignalR hub
             builder.Services.AddAvionRelaySignalRHub(opt =>
             {
-                opt.EnableDetailedErrors = avionRelayOptions.Transports.SignalR.EnableDetailedErrors;
-                opt.MaxMessageSize = avionRelayOptions.Transports.SignalR.MaxMessageSize;
-                opt.ClientTimeoutSeconds = avionRelayOptions.Transports.SignalR.ClientTimeoutSeconds;
-                opt.KeepAliveIntervalSeconds = avionRelayOptions.Transports.SignalR.KeepAliveIntervalSeconds;
+                opt.EnableDetailedErrors = avionRelayConfiguration.Transports.SignalR.EnableDetailedErrors;
+                opt.MaxMessageSize = avionRelayConfiguration.Transports.SignalR.MaxMessageSize;
+                opt.ClientTimeoutSeconds = avionRelayConfiguration.Transports.SignalR.ClientTimeoutSeconds;
+                opt.KeepAliveIntervalSeconds = avionRelayConfiguration.Transports.SignalR.KeepAliveIntervalSeconds;
             });
         }
 
@@ -68,11 +67,16 @@ public class Program
         {
             builder.Services.AddAvionRelayGrpcHub(opt =>
             {
-                opt.EnableDetailedErrors = avionRelayOptions.Transports.SignalR.EnableDetailedErrors;
-                opt.EnableReflection = avionRelayOptions.Transports.Grpc.EnableReflection;
-                opt.MaxMessageSize = avionRelayOptions.Transports.Grpc.MaxMessageSize;
+                opt.EnableDetailedErrors = avionRelayConfiguration.Transports.SignalR.EnableDetailedErrors;
+                opt.EnableReflection = avionRelayConfiguration.Transports.Grpc.EnableReflection;
+                opt.MaxMessageSize = avionRelayConfiguration.Transports.Grpc.MaxMessageSize;
             }
             );
+
+            if (avionRelayConfiguration.Transports.Grpc.EnableReflection)
+            {
+                builder.Services.AddGrpcReflection();
+            }
         }
         
 
@@ -80,6 +84,7 @@ public class Program
         builder.Services.AddSingleton<TransportMonitorAggregator>();
         builder.Services.AddSingleton<MessageHandlerTracker>();
         builder.Services.AddSingleton<ResponseTracker>();
+        builder.Services.AddSingleton<AvionRelayTransportRouter>();
 
 
         await ConfigureMessageStorageProvider(builder);
@@ -93,9 +98,6 @@ public class Program
         
         builder.Services.AddTransient<IUserStore<ApplicationUser>, AvionRelayUserStore>();
         builder.Services.AddTransient<IRoleStore<ApplicationRole>, AvionRelayRoleStore>();
-        
-        
-        
 
         var app = builder.Build();
 
@@ -111,7 +113,7 @@ public class Program
             app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+        //app.UseHttpsRedirection();
 
         app.UseAntiforgery();
 
@@ -120,14 +122,23 @@ public class Program
 
         // Add additional endpoints required by the Identity /Account Razor components.
         app.MapAdditionalIdentityEndpoints();
-        
-        app.MapHub<AvionRelaySignalRHub>(avionRelayOptions.Transports.SignalR.HubPath, options =>
+
+        if (avionRelayConfiguration.EnabledTransports.Contains(TransportTypes.SignalR))
         {
-            options.AllowStatefulReconnects = true;
-        });
-        
-        app.MapAvionRelayGrpcService(avionRelayOptions.Transports.Grpc.ListenAddress);
-        
+            app.MapHub<AvionRelaySignalRTransport>(avionRelayConfiguration.Transports.SignalR.HubPath, options =>
+            {
+                options.AllowStatefulReconnects = true;
+            });
+        }
+
+        if (avionRelayConfiguration.EnabledTransports.Contains(TransportTypes.Grpc))
+        {
+            app.MapAvionRelayGrpcService();
+            if (avionRelayConfiguration.Transports.Grpc.EnableReflection)
+            {
+                app.MapGrpcReflectionService();
+            }
+        }
         await app.RunAsync();
     }
 
@@ -155,5 +166,55 @@ public class Program
                 builder.Services.AddSingleton<IMessageStorage, InMemoryStorage>();
                 break;
         }
+    }
+
+    public static async Task ConfigureWebBindings(WebApplicationBuilder builder, AvionRelayExternalOptions avionRelayOptions)
+    {
+        // Configure Kestrel to listen on specific endpoints
+        builder.WebHost.ConfigureKestrel((context, serverOptions) =>
+        {
+            // Default HTTPS endpoint for web UI and SignalR
+            serverOptions.ListenAnyIP(7008, listenOptions =>
+            {
+                listenOptions.UseHttps();
+            });
+            
+            // Default HTTP endpoint
+            serverOptions.ListenAnyIP(5172);
+            
+            // Dedicated gRPC endpoint
+            if (avionRelayOptions.EnabledTransports.Contains(TransportTypes.Grpc))
+            {
+                var grpcAddress = avionRelayOptions.Transports.Grpc.ListenAddress;
+                var parts = grpcAddress.Split(':');
+                var host = parts[0];
+                var port = int.Parse(parts[1]);
+                
+                if (host == "0.0.0.0")
+                {
+                    serverOptions.ListenAnyIP(port, listenOptions =>
+                    {
+                        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
+                        
+                        if (avionRelayOptions.Transports.Grpc.EnableTls)
+                        {
+                            listenOptions.UseHttps(); // You can configure certificate here if needed
+                        }
+                    });
+                }
+                else
+                {
+                    serverOptions.Listen(System.Net.IPAddress.Parse(host), port, listenOptions =>
+                    {
+                        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
+                        
+                        if (avionRelayOptions.Transports.Grpc.EnableTls)
+                        {
+                            listenOptions.UseHttps();
+                        }
+                    });
+                }
+            }
+        });
     }
 }

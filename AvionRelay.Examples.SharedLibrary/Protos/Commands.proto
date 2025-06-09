@@ -8,6 +8,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+import "avionrelay.proto";
 
 
 // IMPORTANT: This uses EXAMPLE messages for demonstration.
@@ -17,7 +18,8 @@ option csharp_namespace = "AvionRelay.Examples.SharedLibrary";
 
 // Get status of a component
 message GetStatusCommand {
-    bool include_details = 1;
+    MessageContext metadata = 1;
+    bool include_details = 2;
 }
 
 message StatusResponse {

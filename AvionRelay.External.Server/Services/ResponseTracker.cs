@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
-using AvionRelay.Core.Messages;
+using Microsoft.Extensions.Logging;
 
-namespace AvionRelay.External.Hub.Services;
+namespace AvionRelay.External.Server.Services;
 
 /// <summary>
 /// Tracks pending responses for messages that expect responses
@@ -52,33 +52,28 @@ public class ResponseTracker
         
         pendingResponse.TimeoutCancellation = cts;
         
-        _logger.LogDebug("Tracking response for message {MessageId} from {Sender}", messageId, senderConnectionId);
+        _logger.LogDebug("Tracking pending response for message {MessageId} from {Sender}", messageId, senderConnectionId);
     }
     
     /// <summary>
     /// Records a response received for a message
     /// </summary>
-    public bool RecordResponse(Guid messageId, string responderId, JsonResponse response)
+    public bool RecordResponse(JsonResponse response)
     {
-        if (!_pendingResponses.TryGetValue(messageId, out var pendingResponse))
+        if (!_pendingResponses.TryGetValue(response.MessageId, out var pendingResponse))
         {
-            _logger.LogWarning("Received response for unknown message {MessageId}", messageId);
+            _logger.LogWarning("Received response for unknown message {MessageId}", response.MessageId);
             return false;
         }
-        
-       
         pendingResponse.Responses.Add(response);
         
-        _logger.LogDebug("Recorded response {Number}/{Expected} for message {MessageId}",
-            pendingResponse.Responses.Count, pendingResponse.ExpectedResponseCount, messageId);
+        _logger.LogDebug("Recorded response {Number}/{Expected} for message {MessageId}", pendingResponse.Responses.Count, pendingResponse.ExpectedResponseCount,response.MessageId);
         
         // Check if we've received all expected responses
         if (pendingResponse.Responses.Count >= pendingResponse.ExpectedResponseCount)
         {
-            //todo: See if removing this allows tasking to flow correctly vs removing the tracked result early
-            //pendingResponse.TimeoutCancellation?.Cancel();
             pendingResponse.ResponseTcs.TrySetResult(pendingResponse.Responses);
-            _logger.LogDebug("All responses received for message {MessageId}", messageId);
+            _logger.LogDebug("All responses received for message {MessageId}", response.MessageId);
             return true;
         }
         return false;
@@ -94,14 +89,9 @@ public class ResponseTracker
             _logger.LogDebug("Waiting for responses for the following messages: {PendingIDs} ", string.Join(",",_pendingResponses.Keys.Select(k => k.ToString())));
             throw new InvalidOperationException($"No pending response tracked for message {messageId}");
         }
-        
         try
         {
             var responses = await pendingResponse.ResponseTcs.Task;
-            if (pendingResponse.Responses.Count >= pendingResponse.ExpectedResponseCount)
-            {
-                CompleteTracking(messageId);
-            }
             return responses;
         }
         catch (TimeoutException)

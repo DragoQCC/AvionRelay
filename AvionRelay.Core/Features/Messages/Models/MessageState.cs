@@ -1,4 +1,5 @@
-﻿using HelpfulTypesAndExtensions;
+﻿using System.Text.Json.Serialization;
+using HelpfulTypesAndExtensions;
 
 namespace AvionRelay.Core.Messages;
 
@@ -56,6 +57,7 @@ public abstract record FinalizedMessageState : MessageState
 /// <summary>
 /// Represents the current state of a message in the processing pipeline
 /// </summary>
+//[JsonConverter(typeof(JsonStringEnumConverter<MessageState>))]
 public enum MessageState
 {
     /// <summary>

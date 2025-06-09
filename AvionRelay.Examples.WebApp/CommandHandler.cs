@@ -32,9 +32,14 @@ public class CommandHandler
                 }
             };
         }
-
         response.Status = "testing";
-        await _bus.RespondToMessage<GetStatusCommand,StatusResponse>(statusCommand.Metadata.MessageId,response,new(HandlerID.ToString(),nameof(CommandHandler)));
+
+        MessageReceiver receiver = new()
+        {
+            ReceiverId = HandlerID.ToString(),
+            Name = nameof(CommandHandler)
+        };
+        await _bus.RespondToMessage<GetStatusCommand,StatusResponse>(statusCommand.Metadata.MessageId,response,receiver);
         return response;
     }
     

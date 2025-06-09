@@ -11,12 +11,12 @@ public class SignalROnHandler : IAvionRelaySignalRClientModel
     public MessageResponseReceivedEvent MessageResponseReceivedEvent = new();
     
     /// <inheritdoc />
-    public async Task ReceivePackage(TransportPackage package)
+    public async Task ReceivePackage(TransportPackage transportPackage)
     {
         try
         {
-            Package convertedPackage = package.ToPackage();
-            await MessageHandlerRegister.ProcessPackage(convertedPackage);
+            Package package = transportPackage.ToPackage();
+            await MessageHandlerRegister.ProcessPackage(package);
         }
         catch (Exception e)
         {
