@@ -5,7 +5,7 @@ option csharp_namespace = "AvionRelay.External.Transports.Grpc";
 package avionrelay;
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
 
 // Main gRPC service for AvionRelay Hub
 service AvionRelayHub {
@@ -18,17 +18,15 @@ enum TransportType {
     UNKNOWN = 0;
     SIGNALR = 1;
     GRPC = 2;
-    RABBITMQ = 3;
 }
 
 // Message priority enum
 enum MessagePriority {
-    LOWEST = 0;
-    LOW = 1;
-    NORMAL = 2;
-    HIGH = 3;
-    VERY_HIGH = 4;
-    HIGHEST = 5;
+    LOW = 0;
+    NORMAL = 1;
+    HIGH = 2;
+    VERY_HIGH = 3;
+    CRITICAL = 4;
 }
 
 // Base message type enum
@@ -64,17 +62,14 @@ message ClientMessage {
         // Send a message and expect responses
         TransportPackageRequest send_message_wait_response = 3;
 
-        // Send a response to a received message
-        ResponseMessage send_response = 4;
-
-        // Acknowledge receipt of a message
-        Acknowledgement acknowledge = 5;
+        // Send a response or acknowledgement to a received message
+        MessageResponse send_response = 4;
 
         // Heartbeat to keep connection alive
-        Heartbeat heartbeat = 6;
+        Heartbeat heartbeat = 5;
 
         // Client status update
-        ClientStatusUpdate status_update = 7;
+        ClientStatusUpdate status_update = 6;
     }
 }
 
@@ -120,14 +115,8 @@ message ClientRegistrationResponse {
     string server_version = 5;
 }
 
-// Acknowledgement
-message Acknowledgement {
-    string message_id = 1;
-    MessageReceiver acknowledger = 2;
-    google.protobuf.Timestamp acknowledged_at = 3;
-}
 
-// Message context/metadata (matches C# MessageContext)
+// Message context/metadata
 message MessageContext {
     string message_id = 1;
     google.protobuf.Timestamp created_at = 2;
@@ -137,15 +126,15 @@ message MessageContext {
     bool is_cancelled = 6;
     int32 retry_count = 7;
     BaseMessageType base_message_type = 8;
+    string message_type_name = 9;
 }
 
 // Transport package for messages
 message TransportPackageRequest {
     string sender_id = 1;
-    string message_type_short_name = 2;
     // JSON serialized message content
-    string message_json = 3;
-    
+    string message_json = 2;
+    repeated string handler_names_or_ids =3;
 }
 
 // Message receiver
@@ -154,18 +143,47 @@ message MessageReceiver {
     string name = 2;
 }
 
-// Response message
-message ResponseMessage {
-    string message_id = 1;
-    MessageReceiver acknowledger = 2;
-    // JSON serialized response
-    string response_json = 3;
-    google.protobuf.Timestamp responded_at = 4;
+// Acknowledgement Response
+message Acknowledgement {
+    google.protobuf.Empty empty =1;
 }
+
+// The response to a message
+message MessageResponse {
+    string message_id =1;
+    MessageReceiver receiver = 2;
+    google.protobuf.Timestamp responded_at = 3;
+    oneof response
+    {
+        Acknowledgement acknowledgement = 4;
+        string response_json = 5;
+        MessagingError messaging_error = 6;
+    }
+}
+
+enum MessageErrorType
+{
+    NETWORK_ERROR = 0;
+    SERVER_ERROR = 1;
+    CLIENT_ERROR = 2;
+    OTHER = 3;
+}
+
+message MessagingError
+{
+    string source =1;
+    string error_message =2;
+    MessageErrorType error_type = 3;
+    MessagePriority error_priority =4;
+    google.protobuf.Timestamp error_timestamp =5;
+    string suggestion =6;
+}
+
+
 
 // List of message responses
 message MessageResponseList {
-    repeated ResponseMessage responses = 1;
+    repeated MessageResponse responses = 1;
 }
 
 

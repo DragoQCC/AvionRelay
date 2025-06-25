@@ -56,27 +56,4 @@ public class MessageDeserializationService
             return null;
         }
     }
-
-    /// <summary>
-    /// Creates a Package from a transport package using type resolution
-    /// </summary>
-    public Package? CreatePackageFromTransport(TransportPackage transportPackage)
-    {
-        var message = DeserializeMessage(
-            transportPackage.MessageTypeShortName, 
-            transportPackage.MessageJson);
-
-        if (message == null)
-            return null;
-
-        // Create the package
-        var package = new Package
-        {
-            Message = message,
-            MessageType = transportPackage.MessageTypeShortName,
-            WrapperID = transportPackage.MessageId
-        };
-
-        return package;
-    }
 }

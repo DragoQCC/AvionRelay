@@ -1,60 +1,71 @@
 ﻿using System.Collections.Concurrent;
 using System.Text.Json;
-using AvionRelay.Core;
 using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Messages;
 using AvionRelay.Core.Services;
-using Microsoft.AspNetCore.SignalR;
+using HelpfulTypesAndExtensions;
 using Microsoft.Extensions.Logging;
 
 namespace AvionRelay.External.Transports.SignalR;
 
 //TODO: Implement the transport client calls
-public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
+public class AvionRelaySignalRMessageBus : AvionRelayExternalBus
 {
     private readonly ILogger<AvionRelaySignalRMessageBus> _logger;
     private readonly SignalRTransportOptions _transportOptions;
-    private readonly SignalRTransportClient _client;
-    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Package>> _pendingResponses = new();
+    private readonly SignalRTransportClient _transportClient;
+    private readonly ConcurrentDictionary<Guid, List<TaskCompletionSource<ResponsePayload>>> _pendingResponses = new();
     
-    public AvionRelaySignalRMessageBus(ILogger<AvionRelaySignalRMessageBus> logger,SignalRTransportOptions transportOptions, SignalRTransportClient client)
+    public AvionRelaySignalRMessageBus(ILogger<AvionRelaySignalRMessageBus> logger,SignalRTransportOptions transportOptions, SignalRTransportClient transportClient)
     {
         _logger = logger;
         _transportOptions = transportOptions;
-        _client = client;
-        _client.Connected += OnConnected;
-        _client.Disconnected += OnDisconnected;
+        _transportClient = transportClient;
+        _transportClient.Connected += OnConnected;
+        _transportClient.Disconnected += OnDisconnected;
+        _transportClient.MessageResponseReceivedEvent.Subscribe<MessageResponseReceivedEventCall>(HandleMessageResponse);
     }
     
-    public async Task StartAsync(CancellationToken cancellationToken = default)
+    public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        await _client.ConnectAsync(cancellationToken);
+        await _transportClient.ConnectAsync(cancellationToken);
     }
     
-    public async Task StopAsync()
+    public override async Task StopAsync()
     {
-        await _client.DisconnectAsync();
+        await _transportClient.DisconnectAsync();
     }
 
-    public override async Task RegisterMessenger(List<string>? supportedMessageNames = null)
+    /// <inheritdoc />
+    public override async Task<AvionRelayClient> RegisterClient(string clientName, string clientVersion, List<string> supportedMessageNames, Dictionary<string, object>? metadata = null)
     {
-        await _client.RegisterClient(supportedMessageNames);
+        ClientRegistrationRequest registrationRequest = new()
+        {
+            ClientName = clientName,
+            ClientVersion = clientVersion,
+            TransportType = TransportTypes.SignalR,
+            HostAddress = Helper.GetPreferredIPAddress(),
+            Metadata = metadata ?? new Dictionary<string, object>(),
+            SupportedMessages = supportedMessageNames
+        };
+        return await _transportClient.RegisterClient(registrationRequest);
     }
     
-    //TODO: Update with the right Response wrapper (i.e. IMessageResponse)
-    public override async Task<MessageResponse<TResponse>> ExecuteCommand<TCommand, TResponse>(TCommand command, CancellationToken? cancellationToken = null,TimeSpan? timeout = null)
+
+    public override async Task<ResponsePayload<TResponse>> ExecuteCommand<TCommand, TResponse>(TCommand command, string targetHandler, CancellationToken? cancellationToken = null,TimeSpan? timeout = null)
     {
         var package = Package.Create(command);
         var messageId = package.WrapperID;
         
-        var tcs = new TaskCompletionSource<Package>();
-        _pendingResponses[messageId] = tcs;
+        var tcs = new TaskCompletionSource<ResponsePayload>();
+        _pendingResponses.TryAdd(messageId,[tcs]);
         
         try
         {
             _logger.LogInformation("Sending message {MessageId}", messageId);
-            _logger.LogInformation("Client info: ID:{ConnectionID} State:{State}",_client.ConnectionId, _client.State);
-            return (await _client.SendMessageWaitResponse<TResponse>(package)).First();
+            await _transportClient.SendMessageWaitResponse<TResponse>(package, [ targetHandler ]);
+            var untypedResponse = await _pendingResponses[messageId].First().Task;
+            return ResponsePayload<TResponse>.FromResponsePayload(untypedResponse);
         }
         finally
         {
@@ -63,50 +74,91 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
     }
 
     /// <inheritdoc />
-    public override async Task<List<MessageResponse<TResponse>>> RequestInspection<TInspection, TResponse>(TInspection inspection,CancellationToken? cancellationToken = null,TimeSpan? timeout = null)
+    public override async IAsyncEnumerable<ResponsePayload<TResponse>> RequestInspection<TInspection, TResponse>(TInspection inspection, List<string> targetHandlers, CancellationToken? cancellationToken = null,TimeSpan? timeout = null)
     {
         Package package = Package.Create(inspection);
-        await _client.SendPackageAsync(package, cancellationToken ?? CancellationToken.None);
-        //TODO: Same as command i will need to implement the logic for awaiting the responses from the hub
-        return [ ];
-    }
-
-    public override async Task PublishNotification<TNotification>(TNotification notification, CancellationToken? cancellationToken = null, TimeSpan? timeout = null)
-    {
-        var package = Package.Create(notification);
-        await _client.SendPackageAsync(package, cancellationToken ?? CancellationToken.None);
-    }
-    
-    public override async Task SendAlert<TAlert>(TAlert alert,CancellationToken? cancellationToken = null, TimeSpan? timeout = null)
-    {
-        var package = Package.Create(alert);
-        await _client.SendPackageAsync(package, cancellationToken ?? CancellationToken.None);
+        var messageId = package.WrapperID;
+        
+        //for each handler, add a task completion source to keep track of 
+        var tcsList = new List<TaskCompletionSource<ResponsePayload>>(targetHandlers.Count);
+        targetHandlers.ForEach(x => tcsList.Add(new TaskCompletionSource<ResponsePayload>()));
+        _pendingResponses.TryAdd(messageId, tcsList);
+        _logger.LogInformation("Sending message {MessageId}", messageId);
+            
+        _transportClient.SendMessageWaitResponse<TResponse>(package, targetHandlers).FireAndForget();
+        _logger.LogDebug("Waiting on {PendingTasks} responses to come back", _pendingResponses[messageId].Count);
+        await foreach (var pendingResponseTask in Task.WhenEach(_pendingResponses[messageId].Select(x => x.Task)))
+        {
+            ResponsePayload resp = await pendingResponseTask;
+            var typedResponse = ResponsePayload<TResponse>.FromResponsePayload(resp);
+            _logger.LogDebug("Yielding response back to inspection requester");
+            yield return typedResponse;
+        }
     }
 
     /// <inheritdoc />
-    public override async Task RespondToMessage<T, TResponse>(Guid messageId, TResponse response, MessageReceiver responder)
+    public override async Task PublishNotification<TNotification>(TNotification notification, CancellationToken? cancellationToken = null, TimeSpan? timeout = null)
     {
-        _logger.LogInformation("Sending response for message {messageID}", messageId);
-        JsonResponse responseWrapper = new()
-        {
-            MessageId = messageId,
-            ResponseJson = JsonSerializer.Serialize(response),
-            Acknowledger = responder
-        };
-        await _client.SendMessageResponse(responseWrapper);
+        var package = Package.Create(notification);
+        await _transportClient.SendPackageAsync(package, cancellationToken ?? CancellationToken.None);
+    }
+    
+    /// <inheritdoc />
+    public override async Task SendAlert<TAlert>(TAlert alert,CancellationToken? cancellationToken = null, TimeSpan? timeout = null)
+    {
+        var package = Package.Create(alert);
+        await _transportClient.SendPackageAsync(package, cancellationToken ?? CancellationToken.None);
+    }
+
+    /// <inheritdoc />
+    public override async Task RespondToMessage<T, TResponse>(Guid messageID,TResponse response, MessageReceiver responder)
+    {
+        _logger.LogInformation("Sending response for message {messageID}", messageID.ToString());
+        string jsonResponse = response.ToJsonIgnoreCase();
+        ResponsePayload responseWrapper = new(messageID, responder, DateTime.UtcNow, jsonResponse);
+        await _transportClient.SendMessageResponse(responseWrapper);
     }
 
     /// <inheritdoc />
     public override async Task AcknowledgeMessage<T>(Guid messageId, MessageReceiver acknowledger)
     {
+        //await _transportClient.
     }
-
-    /// <inheritdoc />
-    public override async Task<Package?> ReadNextOutboundMessage(CancellationToken cancellationToken = default) => null;
-
-    private async Task HandleReceivedPackage(Package package)
+    
+    public async Task HandleMessageResponse(MessageResponseReceivedEventCall call)
     {
-        _logger.LogDebug("Handling received package: {MessageId} of type {MessageType}", package.WrapperID, package.MessageType);
+        try
+        {
+            Guid messageId = call.Responses.First().MessageId;
+            List<ResponsePayload> responses = call.Responses;
+            _logger.LogInformation("Received {Count} responses for message {MessageId}", responses.Count, messageId);
+            if (call.IsFinalResponse)
+            {
+                _logger.LogInformation("Got all responses for message {MessageId}", messageId);
+            }
+                
+            if (_pendingResponses.TryGetValue(messageId, out var taskCompletionSources))
+            {
+                //TODO: Since this is called multiple times its setting a result on the first item more then once
+                foreach (var response in responses)
+                {
+                    var firstNonCompleteTcs = taskCompletionSources.First(x => x.Task.IsCompleted is false);
+                    firstNonCompleteTcs.TrySetResult(response);
+                }
+                /*await Task.Delay(500);
+                taskCompletionSources.RemoveRange(0,responses.Count);*/
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+    
+
+    /*private async Task HandleReceivedPackage(Package package)
+    {
+        _logger.LogDebug("Handling received package: {MessageId} of type {MessageType}", package.WrapperID, package.Message.Metadata.MessageTypeName);
             
         // Check if this is a response to a pending command
         if (_pendingResponses.TryRemove(package.WrapperID, out var tcs))
@@ -117,7 +169,7 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
         
         // Otherwise, process through the messaging manager
         await MessageHandlerRegister.ProcessPackage(package);
-    }
+    }*/
     
     private Task OnConnected()
     {
@@ -130,12 +182,16 @@ public class AvionRelaySignalRMessageBus : AvionRelayMessageBus
         _logger.LogWarning(exception, "SignalR transport disconnected");
         
         // Cancel all pending responses
-        foreach (var pending in _pendingResponses.Values)
+        foreach (var pendingList in _pendingResponses.Values)
         {
-            pending.TrySetCanceled();
+            foreach (TaskCompletionSource<ResponsePayload> taskCompletionSource in pendingList)
+            {
+                taskCompletionSource.TrySetCanceled();
+            }
         }
         _pendingResponses.Clear();
-        
         return Task.CompletedTask;
     }
+
+
 }

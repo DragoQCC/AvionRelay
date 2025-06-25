@@ -2,9 +2,14 @@
 
 namespace AvionRelay.Examples.SharedLibrary.Commands;
 
-public record GetStatusCommand : Command<StatusResponse>
+public class GetStatusCommand : Command<StatusResponse>
 {
     public bool IncludeDetails { get; set; }
+
+    public GetStatusCommand()
+    {
+        Metadata.MessageTypeName = nameof(GetStatusCommand);
+    }
 }
 
 public record StatusResponse

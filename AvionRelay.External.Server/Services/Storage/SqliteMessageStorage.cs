@@ -7,7 +7,7 @@ namespace AvionRelay.External.Server.Services;
 
 
 
-public class SqliteMessageStorage : IMessageStorage
+public class SqliteMessageStorage : IExternalMessageStorage
 {
     
     private readonly ILogger<SqliteMessageStorage> _logger;
@@ -18,50 +18,25 @@ public class SqliteMessageStorage : IMessageStorage
         _logger = logger;
         _sqliteDatabase = sqliteDatabase;
     }
-    
+
+
     /// <inheritdoc />
-    public void StorePackage(Package package, bool inQueue)
+    public async Task StoreTransportPackage(TransportPackage transportPackage)
     {
     }
 
     /// <inheritdoc />
-    public Package? RetrieveNextPackage() => null;
+    public async Task StoreMessageContext(MessageContext messageContext)
+    {
+    }
 
     /// <inheritdoc />
-    public Package? RetrievePackage(Guid messageId) => null;
-    
-    
-    public async Task<bool> InsertMessageAsync(MessageRecord message)
+    public async Task StoreMessageForSchedule()
     {
-        return await _sqliteDatabase.InsertAsync(message);
     }
-    
-    public async Task<List<MessageRecord>> GetRecentMessagesAsync(int count = 100)
+
+    /// <inheritdoc />
+    public async Task StoreMessageForFailure()
     {
-        //find the message with the latest timestamp
-        var latestMessage = (await _sqliteDatabase.GetItemsWhereAsync<MessageRecord>(x => true)).OrderByDescending(x => x.Timestamp).FirstOrDefault();
-        if (latestMessage is null)
-        {
-            return [];
-        }
-        //get all messages prior to the latest message up to the count
-        return (await _sqliteDatabase.GetItemsWhereAsync<MessageRecord>(x => x.Timestamp < latestMessage.Timestamp)).OrderByDescending(x => x.Timestamp).Take(count).ToList();
-    }
-    
-    public async Task<Dictionary<string, int>> GetMessageTypeStatsAsync()
-    {
-        var results = await  _sqliteDatabase.DoWithConnectionAsync<SQLiteAsyncConnection, Task<List<MessageTypeCount>>>(async connection =>
-        {
-            return await connection.QueryAsync<MessageTypeCount>("SELECT MessageType, COUNT(*) AS Count FROM MessageRecord GROUP BY MessageType ORDER BY Count DESC");
-        });
-        return (await results).ToDictionary(x => x.MessageType, x => x.Count);
-    }
-    
-    private class MessageTypeCount
-    {
-        public string MessageType { get; set; } = string.Empty;
-        public int Count { get; set; }
     }
 }
-
-// Data models

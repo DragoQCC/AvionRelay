@@ -1,4 +1,5 @@
 using AvionRelay.Examples.BlazorApp.Components;
+using AvionRelay.External;
 using AvionRelay.External.Transports.SignalR;
 using MudBlazor.Services;
 
@@ -13,12 +14,12 @@ public class Program
 
         // Add services to the container.
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+        
 
         //add as a SignalR client
-        builder.Services.WithSignalRMessageBus(opt => 
+        builder.Services.AddAvionRelayExternalMessaging().WithSignalRMessageBus(opt => 
         {
             opt.HubUrl = "https://localhost:7008/avionrelay";
-            opt.ClientName = "Example Blazor App";
         });
         
         var app = builder.Build();
@@ -31,19 +32,19 @@ public class Program
             app.UseHsts();
         }
         
-        
-
         app.UseHttpsRedirection();
-
         app.UseAntiforgery();
-
         app.MapStaticAssets();
         app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
         
-        //get the SignalR message bus and connect it
-        var signalRMessageBus = app.Services.GetRequiredService<AvionRelaySignalRMessageBus>();
-        await signalRMessageBus.StartAsync();
-        await signalRMessageBus.RegisterMessenger();
+        //configure Avion relay external messaging
+        AvionRelayClientOptions clientOptions = new AvionRelayClientOptions()
+        {
+            Name = "Example Blazor App",
+            ClientVersion = "1.0.0",
+            SupportedMessageNames = []
+        };
+        await app.UseAvionRelayExternalMessaging(clientOptions);
 
         await app.RunAsync();
     }

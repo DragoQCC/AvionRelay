@@ -7,10 +7,9 @@
 /// </summary>
 public enum MessagePriority
 {
-    Lowest = 0,
-    Low = 1,
-    Normal = 2,
-    High = 3,
-    VeryHigh = 4,
-    Highest = 5
+    Low = 0,
+    Normal = 1,
+    High = 2,
+    VeryHigh = 3,
+    Critical = 4
 }

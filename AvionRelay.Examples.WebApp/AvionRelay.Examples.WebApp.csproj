@@ -7,14 +7,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5"/>
-        <PackageReference Include="Scalar.AspNetCore" Version="2.3.1" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+        <PackageReference Include="Scalar.AspNetCore" Version="2.4.16" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
+      <ProjectReference Include="..\AvionRelay.External.Transports.Grpc\AvionRelay.External.Transports.Grpc.csproj" />
       <ProjectReference Include="..\AvionRelay.External.Transports.SignalR\AvionRelay.External.Transports.SignalR.csproj" />
       <ProjectReference Include="..\AvionRelay.Examples.SharedLibrary\AvionRelay.Examples.SharedLibrary.csproj" />
     </ItemGroup>
+
+   <!-- <ItemGroup>
+        <Protobuf Include="..\AvionRelay.Examples.SharedLibrary\Protos\Commands.proto" />
+    </ItemGroup>-->
 
 </Project>

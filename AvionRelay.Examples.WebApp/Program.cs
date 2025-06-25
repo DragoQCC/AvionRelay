@@ -1,17 +1,16 @@
 using System.Diagnostics;
-using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Services;
 using AvionRelay.External.Transports.SignalR;
 using Scalar.AspNetCore;
 using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Examples.SharedLibrary.Commands;
 using AvionRelay.External;
+using GetLanguageInspection = AvionRelay.Examples.SharedLibrary.Inspections.GetLanguageInspection;
 
 namespace AvionRelay.Examples.WebApp;
 
 public class Program
 {
-    private static IServiceProvider _serviceProvider;
     
     public static async Task Main(string[] args)
     {
@@ -23,25 +22,14 @@ public class Program
         builder.Services.AddOpenApi();
         
         //add as a SignalR client
-        builder.Services.WithSignalRMessageBus(opt => 
+        builder.Services.AddAvionRelayExternalMessaging().WithSignalRMessageBus(opt => 
         {
             opt.HubUrl = "https://localhost:7008/avionrelay";
-            opt.ClientName = "Example Web App";
         });
         
-        // Add the message type resolver
-        builder.Services.AddMessageTypeResolver();
         
-        
-        
-        
-
         var app = builder.Build();
         
-        _serviceProvider = app.Services;
-
-       
-
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -53,45 +41,37 @@ public class Program
         app.UseHttpsRedirection();
         app.UseAuthorization();
 
-        //get the SignalR message bus and connect it
-        var signalRMessageBus = app.Services.GetRequiredService<AvionRelaySignalRMessageBus>();
-        await signalRMessageBus.StartAsync();
-        await RegisterKnownHandler();
-        TransportPackageExtensions.Initialize(_serviceProvider);
+        //Create the list of message types this client can handle
+        List<string> supportedMessages = [nameof(GetStatusCommand), nameof(AccessDeniedAlert),nameof(GetLanguageInspection)  ]; //
+        //call the use external messaging, passing in the client config
+        AvionRelayClientOptions clientOptions = new AvionRelayClientOptions()
+        {
+            Name = "Example Web App",
+            ClientVersion = "1.0.0",
+            SupportedMessageNames = supportedMessages
+        };
+        await app.UseAvionRelayExternalMessaging(clientOptions);
+        
+        await RegisterKnownHandler(app.Services);
+        
        
         await app.RunAsync();
     }
     
     
-    private static async Task RegisterKnownHandler()
+    private static async Task RegisterKnownHandler(IServiceProvider serviceProvider)
     {
         //get the bus and the logger
-        var bus = _serviceProvider.GetRequiredService<AvionRelayMessageBus>();
-        var logger = _serviceProvider.GetRequiredService<ILogger<CommandHandler>>();
-        var alertLogger = _serviceProvider.GetRequiredService<ILogger<AlertHandler>>();
+        var bus = serviceProvider.GetRequiredService<AvionRelayExternalBus>();
+        var logger = serviceProvider.GetRequiredService<ILogger<MessageHandler>>();
         
         //Create the handler class instances if non-static 
-        var handler = new CommandHandler(bus, logger);
-        var alertHandler = new AlertHandler(bus, alertLogger);
-        
-        //Create MessageReceivers
-        var receiver = new MessageReceiver()
-        {
-            ReceiverId = CommandHandler.HandlerID.ToString(),
-            Name = nameof(CommandHandler)
-        };
+        var handler = new MessageHandler(bus, logger);
 
-        var alertReceiver = new MessageReceiver()
-        {
-            ReceiverId = AlertHandler.HandlerID.ToString(), 
-            Name = nameof(AlertHandler)
-        };
-        
-        //Register the handlers
-        await MessageHandlerRegister.RegisterHandler<GetStatusCommand>(receiver,handler.HandleGetStatusCommand);
-        await MessageHandlerRegister.RegisterHandler<AccessDeniedAlert>(alertReceiver,alertHandler.HandleAccessDeniedAlert);
-        
-        await bus.RegisterMessenger([nameof(GetStatusCommand), nameof(AccessDeniedAlert)]);
+        //Register the handler
+        await MessageHandlerRegister.RegisterHandler<GetStatusCommand>(handler.Receiver, handler.HandleGetStatusCommand);
+        await MessageHandlerRegister.RegisterHandler<AccessDeniedAlert>(handler.Receiver, handler.HandleAccessDeniedAlert);
+        await MessageHandlerRegister.RegisterHandler<GetLanguageInspection>(handler.Receiver, handler.HandleGetLanguageInspection);
     }
 
     [Conditional("DEBUG")]

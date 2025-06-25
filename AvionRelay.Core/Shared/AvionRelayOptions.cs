@@ -1,15 +1,11 @@
-﻿using AvionRelay.Core.Dispatchers;
-using AvionRelay.Core.Services;
-using Metalama.Extensions.DependencyInjection;
-
-namespace AvionRelay.Core;
+﻿namespace AvionRelay.Core;
 
 
 public class AvionRelayOptions
 {
     public string ApplicationName { get; set; } = "AvionRelay";
     public bool EnableMessagePersistence { get; set; } = true;
-    public RetryPolicy RetryPolicy { get; set; } = new DefaultRetryPolicy();
+    public RetryPolicy RetryPolicy { get; set; } = new();
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public StorageOptions StorageConfig { get; set; } = new();
    

@@ -2,9 +2,9 @@
 
 public interface IAvionRelayTransport
 {
-    public TransportTypes SupportTransportType { get; }
+    public TransportTypes TransportType { get; }
 
-    public Task RouteResponses(string senderID,Guid messageId, List<JsonResponse> responses);
+    public Task RouteResponses(string senderID, List<ResponsePayload> responses, bool isFinalResponse);
 
     public Task RouteMessageToClient(string handlerId, TransportPackage package);
 }

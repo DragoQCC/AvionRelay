@@ -1,14 +1,13 @@
-﻿@using MudBlazor
-
+﻿@using AvionRelay.Core.Messages
+@using AvionRelay.External
+@using HelpfulTypesAndExtensions
+@using MudBlazor
+@using LanguageInspectionResponse = AvionRelay.Examples.SharedLibrary.Inspections.LanguageInspectionResponse
 @page "/"
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
-<br/>
-
-
-
+<MudContainer MaxWidth="MaxWidth.Large">
 <MudCard Outlined="true">
     <MudCardHeader>
         <CardHeaderAvatar>
@@ -16,6 +15,7 @@
         </CardHeaderAvatar>
         <CardHeaderActions>
             @* A button that when pressed sends a GetStatusCommand command to the Hub *@
+            <MudTextField @bind-Value="targetHandler" Label="Handler Name"></MudTextField>
             <MudButton OnClick="@SendGetStatusCommand">Send Command</MudButton>
         </CardHeaderActions>
     </MudCardHeader>
@@ -23,12 +23,20 @@
     @if (_statusResponse is not null)
     {
         <MudCardContent>
-            <MudText>Get Status Command Results:</MudText>
-            <MudText>Status: @_statusResponse.Status</MudText>
-            <MudText>Processed at: @_statusResponse.Timestamp</MudText>
-            @foreach (var detail in _statusResponse.Details ?? [])
+            @if (_statusResponse.HasResponse)
             {
-                <MudText>@detail.Key : @detail.Value.ToString()</MudText>
+                <MudText>Get Status Command Results:</MudText>
+                <MudText>Status: @_statusResponse.Response!.Status</MudText>
+                <MudText>Processed at: @_statusResponse.Response!.Timestamp</MudText>
+                @foreach (var detail in _statusResponse.Response!.Details ?? [ ])
+                {
+                    <MudText>@detail.Key : @detail.Value.ToString()</MudText>
+                }
+            }
+            else if (_statusResponse.HasError)
+            {
+                <MudText>Encountered an error </MudText>
+                <MudText>Error: @_statusResponse.Error!.ToString()</MudText>
             }
         </MudCardContent>
     }
@@ -40,9 +48,62 @@
             <MudIcon Icon="@Icons.Material.Filled.AltRoute"></MudIcon>
         </CardHeaderAvatar>
         <CardHeaderActions>
-            @* A button that when pressed sends a GetStatusCommand command to the Hub *@
+            <MudTextField @bind-Value="inspectionHandlers" Label="Handlers"></MudTextField>
+            <MudButton OnClick="@SendGetLanguageInspection">Send Inspection</MudButton>
+        </CardHeaderActions>
+    </MudCardHeader>
+
+    @if (inspectionResponses is not null)
+    {
+        <MudCardContent>
+            <MudText>Get Language Inspection Results:</MudText>
+            @{
+                int resultCounter = 0;
+            }
+        @foreach(ResponsePayload<LanguageInspectionResponse> resp in inspectionResponses)
+        {
+            resultCounter++;
+            int counter = resultCounter;
+            <MudText>response #@counter</MudText>
+            if (resp.HasResponse)
+            {
+                <MudText>Name: @resp.Receiver?.Name</MudText>
+                <MudText>Language: @resp.Response?.Language</MudText>
+            }
+            else if (resp.HasError)
+            {
+                string? targetClient = resp.Receiver.ReceiverId.IsEmpty()
+                    ? resp.Receiver?.Name
+                    : resp.Receiver?.ReceiverId;
+                <MudText>Targeted Client: @targetClient </MudText>
+                <MudText>Encountered an error </MudText>
+                <MudText>Error: @resp.Error!.ToString()</MudText>
+            }
+            <br/>
+        }
+        </MudCardContent>
+    }
+</MudCard>
+
+<MudCard Outlined="true">
+    <MudCardHeader>
+        <CardHeaderAvatar>
+            <MudIcon Icon="@Icons.Material.Filled.AltRoute"></MudIcon>
+        </CardHeaderAvatar>
+        <CardHeaderActions>
             <MudButton OnClick="@SendAccessDeniedAlert">Send Alert</MudButton>
         </CardHeaderActions>
     </MudCardHeader>
 </MudCard>
 
+<MudCard Outlined="true">
+    <MudCardHeader>
+        <CardHeaderAvatar>
+            <MudIcon Icon="@Icons.Material.Filled.AltRoute"></MudIcon>
+        </CardHeaderAvatar>
+        <CardHeaderActions>
+            <MudButton OnClick="@SendUserTerminationNotification">Publish Notification</MudButton>
+        </CardHeaderActions>
+    </MudCardHeader>
+</MudCard>
+</MudContainer>

@@ -1,5 +1,4 @@
 ﻿@page "/messages"
-@using System.Text.Json
 @using AvionRelay.External.Server.Services
 @using IntercomEventing.Features.Events
 @using MudBlazor
@@ -185,7 +184,7 @@
             _liveMessages.Add(new StoredMessage
             {
                 MessageId = e.Package.WrapperID,
-                MessageType = e.Package.MessageType.ToString(),
+                MessageType = e.Package.Message.Metadata.MessageTypeName,
                 BaseMessageType = e.Package.Message.Metadata.BaseMessageType,
                 Timestamp = DateTime.UtcNow,
                 SenderId = e.FromClientId,
@@ -236,7 +235,6 @@
     {
         TransportTypes.SignalR => Color.Primary,
         TransportTypes.Grpc => Color.Secondary,
-        TransportTypes.RabbitMq => Color.Tertiary,
         _ => Color.Default
     };
     

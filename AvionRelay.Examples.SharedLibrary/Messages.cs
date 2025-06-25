@@ -12,7 +12,7 @@ public record UserCreated(string Result);
 /// <summary>
 /// Example command for the example.
 /// </summary>
-public record CreateUserCommand(User User) : Command<UserCreated>;
+public class CreateUserCommand(User User) : Command<UserCreated>;
 
 
 /// <summary>
@@ -20,16 +20,38 @@ public record CreateUserCommand(User User) : Command<UserCreated>;
 /// </summary>
 /// <param name="User"></param>
 /// <param name="Reason"></param>
-public record AccessDeniedAlert(User User, string Reason) : Alert;
+public class AccessDeniedAlert : Alert
+{
+    public User User { get; }
+    public string Reason { get; }
+    
+    public AccessDeniedAlert(User user, string reason)
+    {
+        Metadata.MessageTypeName = nameof(AccessDeniedAlert);
+        User = user;
+        Reason = reason;
+    }
+}
 
 
 /// <summary>
 /// Example notification representing a user termination, which might go out to multiple systems users interact with
 /// </summary>
-public record UserTerminationNotification(User User, string Reason) : Notification;
+public class UserTerminationNotification : Notification
+{
+    public User User { get; }
+    public string Reason { get; }
+
+    public UserTerminationNotification(User user, string reason)
+    {
+        User = user;
+        Reason = reason;
+        Metadata.MessageTypeName = nameof(UserTerminationNotification);
+    }
+}
 
 
 /// <summary>
 /// Example inspection that should return all of the users.
 /// </summary>
-public record GetAllUsersInspection() : Inspection<List<User>>;
+public class GetAllUsersInspection() : Inspection<List<User>>;

@@ -5,5 +5,4 @@ public enum TransportTypes
     Unknown,
     SignalR,
     Grpc,
-    RabbitMq,
 }

@@ -22,7 +22,6 @@ public class TransportOptions
 {
     public SignalROptions SignalR { get; set; } = new();
     public GrpcOptions Grpc { get; set; } = new();
-    public RabbitMqOptions RabbitMq { get; set; } = new();
 }
 
 public class SignalROptions
@@ -30,37 +29,37 @@ public class SignalROptions
     /// <summary>
     /// Hub endpoint path
     /// </summary>
-    public string HubPath { get; set; }// = "/avionrelay";
+    public string HubPath { get; set; } = "/avionrelay";
     
     /// <summary>
     /// Maximum message size in bytes
     /// </summary>
-    public int MaxMessageSize { get; set; }// = 10 * 1024 * 1024; // 10MB
+    public int MaxMessageSize { get; set; } = 10 * 1024 * 1024; // 10MB
     
     /// <summary>
     /// Client timeout in seconds
     /// </summary>
-    public int ClientTimeoutSeconds { get; set; }// = 60;
+    public int ClientTimeoutSeconds { get; set; } = 60;
     
     /// <summary>
     /// Keep alive interval in seconds
     /// </summary>
-    public int KeepAliveIntervalSeconds { get; set; }// = 30;
+    public int KeepAliveIntervalSeconds { get; set; } = 30;
     
     /// <summary>
     /// Enable detailed errors in responses
     /// </summary>
-    public bool EnableDetailedErrors { get; set; }// = false;
+    public bool EnableDetailedErrors { get; set; } = false;
     
     /// <summary>
     /// Maximum number of concurrent connections (0 = unlimited)
     /// </summary>
-    public int MaxConcurrentConnections { get; set; }// = 0;
+    public int MaxConcurrentConnections { get; set; } = 0;
     
     /// <summary>
     /// Enable message tracing for debugging
     /// </summary>
-    public bool EnableMessageTracing { get; set; }// = false;
+    public bool EnableMessageTracing { get; set; } = false;
 }
 
 public class GrpcOptions
@@ -99,12 +98,4 @@ public class GrpcOptions
     /// Enables detailed error messages from the Grpc services
     /// </summary>
     public bool EnableDetailedErrors { get; set; } = false;
-}
-
-public class RabbitMqOptions
-{
-    public string ConnectionString { get; set; } = "amqp://guest:guest@localhost:5672";
-    public string ExchangeName { get; set; } = "avionrelay";
-    public bool DurableQueues { get; set; } = true;
-    public int PrefetchCount { get; set; } = 10;
 }

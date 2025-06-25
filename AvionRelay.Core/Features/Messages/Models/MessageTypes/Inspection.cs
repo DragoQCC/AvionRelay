@@ -1,13 +1,11 @@
-﻿using AvionRelay.Core.Dispatchers;
-
-namespace AvionRelay.Core.Messages.MessageTypes;
+﻿namespace AvionRelay.Core.Messages.MessageTypes;
 
 
 /// <summary>
 /// Represents a request from one sender to multiple receivers. (e.g., a status check or data request) <br/>
 /// One-to-many, should be acknowledged, should respond.
 /// </summary>
-public abstract record Inspection<TResponse> : AvionRelayMessage, IRespond<TResponse>, IMultiReceiver
+public abstract class Inspection<TResponse> : AvionRelayMessage, IRespond<TResponse>, IMultiReceiver
 {
     protected Inspection()
     {

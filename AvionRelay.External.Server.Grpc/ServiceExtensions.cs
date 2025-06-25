@@ -10,11 +10,10 @@ public static class ServiceExtensions
     /// <summary>
     /// Adds gRPC hub support for the SERVER application
     /// </summary>
-    public static IServiceCollection AddAvionRelayGrpcHub(this IServiceCollection services, Action<GrpcOptions>? configureOptions = null)
+    public static IServiceCollection AddAvionRelayGrpcHub(this IServiceCollection services, GrpcOptions? options = null)
     {
-        var options = new GrpcOptions();
-        configureOptions?.Invoke(options);
-        
+        options ??= new();
+       
         // Add gRPC
         services.AddGrpc(grpcOptions =>
         {
@@ -22,10 +21,14 @@ public static class ServiceExtensions
             grpcOptions.MaxSendMessageSize = options.MaxMessageSize;
             grpcOptions.EnableDetailedErrors = options.EnableDetailedErrors;
         });
-
+        
+        if (options.EnableReflection)
+        {
+            services.AddGrpcReflection();
+        }
+        
         //add the grpc transport to DI
         services.AddSingleton<IAvionRelayTransport,AvionRelayGrpcTransport>();
-        
         // Add gRPC monitoring components
         services.AddSingleton<GrpcTransportMonitor>();
         services.AddSingleton<ITransportMonitor>(sp => sp.GetRequiredService<GrpcTransportMonitor>());
@@ -36,8 +39,17 @@ public static class ServiceExtensions
     /// <summary>
     /// Maps the gRPC service endpoint
     /// </summary>
-    public static void MapAvionRelayGrpcService(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapAvionRelayGrpcService(this IEndpointRouteBuilder endpoints, AvionRelayExternalOptions avionRelayOptions)
     {
-        endpoints.MapGrpcService<AvionRelayGrpcTransport>();
+        if (avionRelayOptions.EnabledTransports.Contains(TransportTypes.Grpc))
+        {
+            var options = avionRelayOptions.Transports.Grpc;
+            endpoints.MapGrpcService<AvionRelayGrpcTransport>();
+            if (options.EnableReflection)
+            {
+                endpoints.MapGrpcReflectionService();
+            }
+        }
+        return endpoints;
     }
 }

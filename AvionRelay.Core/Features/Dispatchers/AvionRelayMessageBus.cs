@@ -9,9 +9,9 @@ public abstract class AvionRelayMessageBus
     
     #region Message Sending
     
-    public abstract Task<MessageResponse<TResponse>> ExecuteCommand<TCommand, TResponse>(TCommand command, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TCommand : Command<TResponse>;
+    public abstract Task<MessageResponse<TResponse>> ExecuteCommand<TCommand, TResponse>(TCommand command,string? targetHandler = null, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TCommand : Command<TResponse>;
     
-    public abstract Task<List<MessageResponse<TResponse>>> RequestInspection<TInspection, TResponse>(TInspection inspection, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TInspection : Inspection<TResponse>;
+    public abstract Task<List<MessageResponse<TResponse>>> RequestInspection<TInspection, TResponse>(TInspection inspection, List<string>? targetHandlers = null, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TInspection : Inspection<TResponse>;
     
     public abstract Task PublishNotification<TNotification>(TNotification notification, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TNotification : Notification;
     

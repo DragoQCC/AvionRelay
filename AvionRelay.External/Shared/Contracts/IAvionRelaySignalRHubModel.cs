@@ -1,7 +1,4 @@
-﻿using AvionRelay.Core.Dispatchers;
-using AvionRelay.Core.Messages;
-
-namespace AvionRelay.External;
+﻿namespace AvionRelay.External;
 
 public interface IAvionRelaySignalRHubModel
 {
@@ -14,7 +11,7 @@ public interface IAvionRelaySignalRHubModel
     /// <returns></returns>
     public Task SendMessageWaitResponse(TransportPackage package);
 
-    Task RegisterClient(ClientRegistration clientRegistration);
+    Task<ClientRegistrationResponse> RegisterClient(ClientRegistrationRequest clientRegistration);
 
-    public Task SendResponse(Guid messageId, JsonResponse response);
+    public Task SendResponse(ResponsePayload response);
 }

@@ -20,6 +20,9 @@
     <Project Path="AvionRelay.External.Server.SignalR\AvionRelay.External.Server.SignalR.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.External.Server\AvionRelay.External.Server.csproj" Type="Classic C#" />
   </Folder>
+  <Folder Name="/SolutionItems/">
+    <File Path=".gitignore" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="AvionRelay.Tests.Integration\AvionRelay.Tests.Integration.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.Tests.Unit\AvionRelay.Tests.Unit.csproj" Type="Classic C#" />

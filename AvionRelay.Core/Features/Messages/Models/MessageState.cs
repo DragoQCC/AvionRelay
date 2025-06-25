@@ -1,7 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using HelpfulTypesAndExtensions;
-
-namespace AvionRelay.Core.Messages;
+﻿namespace AvionRelay.Core.Messages;
 
 // I want to use the state pattern here
 /*public record MessageState : IEnumeration<MessageState>

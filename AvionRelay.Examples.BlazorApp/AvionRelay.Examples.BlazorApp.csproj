@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\AvionRelay.External.Transports.Grpc\AvionRelay.External.Transports.Grpc.csproj" />
       <ProjectReference Include="..\AvionRelay.External.Transports.SignalR\AvionRelay.External.Transports.SignalR.csproj" />
       <ProjectReference Include="..\AvionRelay.Examples.SharedLibrary\AvionRelay.Examples.SharedLibrary.csproj" />
     </ItemGroup>

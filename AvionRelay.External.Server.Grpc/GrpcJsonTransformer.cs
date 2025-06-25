@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using AvionRelay.External.Transports.Grpc;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 
@@ -19,15 +18,6 @@ public static class GrpcJsonTransformer
     {
         try
         {
-            /*Core.Messages.MessageContext context = messageJson.GetMessageContextFromJson();
-            
-            var grpcContext = new External.Transports.Grpc.MessageContext
-            {
-                CreatedAt = Timestamp.FromDateTime(DateTime.SpecifyKind(context.CreatedAt.DateTime, DateTimeKind.Utc)),
-                
-                
-            };*/
-
             var jsonNode = JsonNode.Parse(messageJson);
             if (jsonNode == null) return messageJson;
 
@@ -41,7 +31,6 @@ public static class GrpcJsonTransformer
                     var createdAtStr = metadata["createdAt"]?.GetValue<string>();
                     if (!string.IsNullOrEmpty(createdAtStr) && DateTime.TryParse(createdAtStr, out var createdAt))
                     {
-                        //todo: this is currently giving a value like "2025-06-08T22:28:26.2760857\u002B00:00"
                         metadata["createdAt"] = ConvertToProtobufTimestamp(createdAt);
                     }
                 }
@@ -72,14 +61,7 @@ public static class GrpcJsonTransformer
                         metadata["messageId"] = messageId.ToLowerInvariant();
                     }
                 }
-
-                /*// Ensure numeric enums (not strings)
-                ConvertEnumToNumber(metadata, "state");
-                ConvertEnumToNumber(metadata, "priority");
-                ConvertEnumToNumber(metadata, "baseMessageType");*/
             }
-            Console.WriteLine($"Transformed JSON: {jsonNode.ToJsonString()}");
-
             return jsonNode.ToJsonString();
         }
         catch (Exception ex)
@@ -134,7 +116,6 @@ public static class GrpcJsonTransformer
                     }
                 }
             }
-            
             return jsonNode.ToJsonString();
         }
         catch (Exception ex)

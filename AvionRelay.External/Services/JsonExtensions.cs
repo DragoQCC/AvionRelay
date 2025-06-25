@@ -48,6 +48,30 @@ public static class JsonExtensions
         return JsonSerializer.Deserialize<T>(json, options)!;
     }
 
+    public static T ConvertToIgnoreCase<T>(this object? obj)
+    {
+        JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        return ConvertTo<T>(obj,options);
+    }
+
+    public static string ToJson<T>(this T obj, JsonSerializerOptions? options = null)
+    {
+        return JsonSerializer.Serialize(obj, options);
+    }
+
+    public static string ToJsonIgnoreCase<T>(this T obj)
+    {
+        JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        return JsonSerializer.Serialize(obj, options);
+    }
+    
+
     [Conditional("DEBUG")]
     public static void PrettyPrintJsonString(this string jsonString)
     {

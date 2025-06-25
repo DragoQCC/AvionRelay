@@ -1,10 +1,10 @@
 ﻿using System.Collections.Concurrent;
+using AvionRelay.Core.Messages;
 using AvionRelay.External.Server.Models;
 using AvionRelay.External.Server.Services;
 using AvionRelay.External.Transports.Grpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Acknowledgement = AvionRelay.External.Transports.Grpc.Acknowledgement;
 using MessageContext = AvionRelay.Core.Messages.MessageContext;
@@ -25,7 +25,7 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
     private readonly ConcurrentDictionary<string, ClientStreamContext> _activeStreams = new();
     
     /// <inheritdoc />
-    public TransportTypes SupportTransportType => TransportTypes.Grpc;
+    public TransportTypes TransportType => TransportTypes.Grpc;
 
     
 
@@ -41,6 +41,8 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         _transportRouter = transportRouter;
         _monitor = monitor;
         _logger = logger;
+        
+        _transportRouter.RegisterTransport(this);
     }
     
     public override async Task Communicate(IAsyncStreamReader<ClientMessage> requestStream, IServerStreamWriter<ServerMessage> responseStream, ServerCallContext context)
@@ -71,10 +73,6 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
                         await HandleSendResponse(clientMessage.SendResponse, streamContext);
                         break;
                         
-                    case ClientMessage.MessageOneofCase.Acknowledge:
-                        await HandleAcknowledge(clientMessage.Acknowledge, streamContext);
-                        break;
-                        
                     case ClientMessage.MessageOneofCase.Heartbeat:
                         await HandleHeartbeat(clientMessage.Heartbeat, responseStream);
                         break;
@@ -101,7 +99,7 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
     }
     
     /// <inheritdoc />
-    public async Task RouteResponses(string senderID, Guid messageId, List<JsonResponse> responses)
+    public async Task RouteResponses(string senderID, List<ResponsePayload> responses, bool isFinalResponse = false)
     {
         // Convert to gRPC response format
         var grpcResponses = new MessageResponseList();
@@ -110,6 +108,7 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         //write the responses
         if (_activeStreams.TryGetValue(senderID, out var senderStream))
         {
+            //TODO: Should implement a dead letter caller here as protection in cases where this fails
             await senderStream.ResponseStream.WriteAsync(new ServerMessage
             {
                 ReceiveResponses = grpcResponses
@@ -127,18 +126,40 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         await SendMessageToClient(handlerId, package.ToTransportPackageRequest());
     }
 
-    private async Task<ClientStreamContext> HandleRegistration(ClientRegistrationRequest request, IServerStreamWriter<ServerMessage> responseStream, ServerCallContext context)
+    private async Task<ClientStreamContext> HandleRegistration(AvionRelay.External.Transports.Grpc.ClientRegistrationRequest request, IServerStreamWriter<ServerMessage> responseStream, ServerCallContext context)
     {
         try
         {
-            string clientId = Guid.CreateVersion7().ToString();
             var connectionId = context.Peer;
-            _logger.LogInformation("gRPC client registration: {ClientId} - {ClientName}", clientId, request.ClientName);
+            
+            // Convert metadata
+            var metadata = request.Metadata.ToDictionary(
+                kvp => kvp.Key, 
+                kvp => (object)kvp.Value);
+            
+            // Track the connection
+            var hostAddress = new Uri($"grpc://{context.Peer.Replace("ipv4:","")}");
+            
+            AvionRelay.External.ClientRegistrationRequest clientRegReq = new ClientRegistrationRequest()
+            {
+                ClientName = request.ClientName,
+                HostAddress = hostAddress,
+                TransportType = TransportTypes.Grpc,
+                ClientVersion = request.ClientVersion,
+                Metadata = metadata,
+                SupportedMessages = request.SupportedMessages.ToList()
+            };
+            
+            AvionRelay.External.ClientRegistrationResponse registrationResponse =  await _transportRouter.TrackNewTransportClient(clientRegReq, connectionId);
+            if (registrationResponse.Success is false)
+            {
+                throw new Exception(registrationResponse.FailureMessage);
+            }
             
             // Create stream context
             var streamContext = new ClientStreamContext
             {
-                ClientId = clientId,
+                ClientId = registrationResponse.ClientId.ToString(),
                 ClientName = request.ClientName,
                 ResponseStream = responseStream,
                 ServerCallContext = context,
@@ -146,64 +167,17 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
             };
             
             // Store the active stream
-            _activeStreams[clientId] = streamContext;
+            _activeStreams[registrationResponse.ClientId.ToString()] = streamContext;
             
-            // Convert metadata
-            var metadata = request.Metadata.ToDictionary(
-                kvp => kvp.Key, 
-                kvp => (object)kvp.Value);
-            
-            
-            // Track the connection
-            var hostAddress = new Uri($"grpc://{context.Peer.Replace("ipv4:","")}");
-
-            ClientRegistration clientReg = new ClientRegistration()
-            {
-                ClientId = clientId,
-                ClientName = request.ClientName,
-                HostAddress = hostAddress,
-                Metadata = metadata,
-                TransportType = SupportTransportType,
-            };
-
-            await _transportRouter.TrackNewTransportClient(clientReg, connectionId);
-            
-            /*_connectionTracker.TrackNewConnection(
-                clientId,
-                connectionId,
-                request.ClientName,
-                TransportTypes.Grpc,
-                hostAddress,
-                metadata);
-            
-            // Track transport mapping
-            _connectionTracker.TrackTransportToClientID(connectionId, clientId);
-            
-            // Raise connection event
-            await _monitor.RaiseClientConnected(new ClientConnectedEventCall
-            {
-                ClientId = clientId,
-                ClientName = request.ClientName,
-                TransportType = TransportTypes.Grpc,
-                HostAddress = hostAddress,
-                ConnectedAt = DateTime.UtcNow,
-                Metadata = metadata
-            });
-            
-            // Register message handlers
-            await _handlerTracker.AddMessageHandler(new MessageHandlerRegistration
-            {
-                HandlerID = clientId,
-                MessageNames = request.SupportedMessages.ToList()
-            });*/
+            _logger.LogInformation("gRPC client registration: {ClientId} - {ClientName}", registrationResponse.ClientId.ToString(), request.ClientName);
             
             // Send registration response
             await responseStream.WriteAsync(new ServerMessage
             {
-                RegistrationResponse = new ClientRegistrationResponse
+                RegistrationResponse = new AvionRelay.External.Transports.Grpc.ClientRegistrationResponse
                 {
                     Success = true,
-                    ClientId = clientId
+                    ClientId = registrationResponse.ClientId.ToString()
                 }
             });
             
@@ -213,7 +187,7 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         {
             await responseStream.WriteAsync(new ServerMessage
             {
-                RegistrationResponse = new ClientRegistrationResponse
+                RegistrationResponse = new AvionRelay.External.Transports.Grpc.ClientRegistrationResponse
                 {
                     Success = false,
                     FailureMessage = ex.Message
@@ -232,25 +206,15 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         }
         
         //pull out just the metadata from the request
-        var messageMetadata = Server.JsonExtensions.GetMessageContextFromJson(request.MessageJson);
+        var messageMetadata = JsonExtensions.TryGetJsonSubsectionAs<MessageContext>(request.MessageJson, "metadata", new(){PropertyNameCaseInsensitive = true});
         var messageId = messageMetadata.MessageId;
-        _logger.LogInformation("gRPC message received: {MessageType} - {MessageId}", request.MessageTypeShortName, messageId);
-        
+        _logger.LogInformation("gRPC message received: {MessageType} - {MessageId}", messageMetadata.MessageTypeName, messageId);
         var messageSize = System.Text.Encoding.UTF8.GetByteCount(request.MessageJson);
-        _statistics.RecordMessageReceived(request.MessageTypeShortName, messageSize);
-        
-        // Get handlers for this message type
-        var targetHandlerIds = _handlerTracker.GetMessageHandlers(request.MessageTypeShortName);
-        _logger.LogDebug("Found {Count} handlers for {MessageType}",  targetHandlerIds.Count, request.MessageTypeShortName);
-            
-        if (targetHandlerIds.Count == 0)
-        {
-            return;
-        }
+        _statistics.RecordMessageReceived(messageMetadata.MessageTypeName, messageSize);
         
         // Forward to handlers
         TransportPackage transportPackage = request.ToTransportPackage(messageMetadata);
-        await _transportRouter.ForwardToHandlers(transportPackage, messageMetadata);
+        _transportRouter.ForwardToHandlers(transportPackage, messageMetadata);
     }
     
     private async Task HandleSendMessageWaitResponse(TransportPackageRequest request, ClientStreamContext? streamContext)
@@ -264,68 +228,17 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
             }
             
             //pull out just the metadata from the request
-            //var messageMetadata = Server.JsonExtensions.GetMessageContextFromJson(request.MessageJson);
-            //TODO: if this works update the other instances
             var messageMetadata = JsonExtensions.TryGetJsonSubsectionAs<MessageContext>(request.MessageJson, "metadata", new(){PropertyNameCaseInsensitive = true});
             
             var messageId = messageMetadata.MessageId;
-            _logger.LogInformation("gRPC message received: {MessageType} - {MessageId}", request.MessageTypeShortName, messageId);
-            
+            _logger.LogDebug("gRPC message received: {MessageType} - {MessageId}", messageMetadata.MessageTypeName, messageId);
             
             var messageSize = System.Text.Encoding.UTF8.GetByteCount(request.MessageJson);
-            _statistics.RecordMessageReceived(request.MessageTypeShortName,messageSize);
-            
-            /*// Get handlers for this message type
-            var targetHandlerIds = _handlerTracker.GetMessageHandlers(request.MessageTypeShortName);
-            _logger.LogDebug("Found {Count} handlers for {MessageType}",  targetHandlerIds.Count, request.MessageTypeShortName);
-            
-            if (targetHandlerIds.Count == 0)
-            {
-                return;
-            }
-            
-            // Track pending response
-            _responseTracker.TrackPendingResponse(
-                messageId,
-                request.SenderId,
-                expectedResponseCount: targetHandlerIds.Count,
-                timeout: TimeSpan.FromSeconds(30));
-                */
+            _statistics.RecordMessageReceived(messageMetadata.MessageTypeName,messageSize);
             
             // Forward to handlers
             TransportPackage transportPackage = request.ToTransportPackage(messageMetadata);
-            await _transportRouter.ForwardToHandlers(transportPackage, messageMetadata);
-            
-            /*
-            //TODO: See if I should remove this section or if I should write these responses to the stream from this method
-            // Wait for responses
-            var responses = await _responseTracker.WaitForResponsesAsync(messageId);
-
-            // Convert to gRPC response format
-            var grpcResponses = new MessageResponseList();
-            grpcResponses.Responses.Add(ConvertResponsesToGrpc(responses));
-
-
-            //write the responses
-            // Get the original sender and send all responses
-            var originalSenderId = _responseTracker.GetSenderConnectionId(messageId);
-            if (originalSenderId == null)
-            {
-                _logger.LogError("Unable to find ID of message sender for message {MessageId}", messageId);
-                return;
-            }
-            if (_activeStreams.TryGetValue(originalSenderId, out var senderStream))
-            {
-                await senderStream.ResponseStream.WriteAsync(new ServerMessage
-                {
-                    ReceiveResponses = grpcResponses
-                });
-                _responseTracker.CompleteTracking(messageId);
-            }
-            else
-            {
-                _logger.LogWarning("Grpc stream not being tracked for client {ClientID}", originalSenderId);
-            }*/
+            _transportRouter.ForwardToHandlers(transportPackage, messageMetadata);
         }
         catch (Exception ex)
         {
@@ -333,56 +246,32 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         }
     }
     
-    private async Task HandleSendResponse(ResponseMessage request, ClientStreamContext? context)
+    private async Task HandleSendResponse(MessageResponse request, ClientStreamContext? context)
     {
         try
         {
             var messageId = Guid.Parse(request.MessageId);
-            var clientId = request.Acknowledger.ReceiverId;
+            //TODO: a caller could forget to supply values so adding a check and returning an error would be good
+            var clientId = request.Receiver.ReceiverId;
             
-            _logger.LogInformation("gRPC response received for message {MessageId} from {ClientId}",messageId, clientId);
+            _logger.LogDebug("gRPC response received for message {MessageId} from {ClientId}",messageId, clientId);
             
-            
-            // Record the response
-            JsonResponse jsonResponse = new()
+            ResponsePayload? response = null;
+            Core.Dispatchers.MessageReceiver convertedReceiver = request.Receiver.ToMessageReceiver();
+            if (request.ResponseCase == MessageResponse.ResponseOneofCase.Acknowledgement)
             {
-                MessageId = messageId,
-                Acknowledger = new AvionRelay.Core.Dispatchers.MessageReceiver()
-                {
-                    ReceiverId = clientId,
-                    Name = request.Acknowledger.Name,
-                },
-                ResponseJson = request.ResponseJson
-            };
-
-            await _transportRouter.SendResponseForMessage(jsonResponse);
-            
-            /*var allResponsesReceived = _responseTracker.RecordResponse(jsonResponse);
-            if (allResponsesReceived)
+                response = new ResponsePayload(messageId,convertedReceiver, request.RespondedAt.ToDateTime());
+            }
+            else if (request.ResponseCase == MessageResponse.ResponseOneofCase.MessagingError)
             {
-                // All responses received - the SendMessageWaitResponse call will handle returning them
-                _logger.LogInformation("All responses received for message {MessageId}", messageId);
-                {
-                    // Get the original sender and send all responses
-                    var originalSenderId = _responseTracker.GetSenderConnectionId(messageId);
-                    var allResponses = await _responseTracker.WaitForResponsesAsync(messageId);
-                    if (originalSenderId != null && _activeStreams.TryGetValue(originalSenderId, out var senderStream))
-                    {
-                        await senderStream.ResponseStream.WriteAsync(new ServerMessage
-                        {
-                            ReceiveResponses = new MessageResponseList
-                            {
-                                Responses = { ConvertResponsesToGrpc(allResponses) },
-                            }
-                        });
-                
-                        _responseTracker.CompleteTracking(messageId);
-                    }
-                    //TODO: Sender could be signalR so need to check for that and call the hub context instead if it is not a grpc sender
-                    string originalSendertransportId = _connectionTracker.GetTransportIDFromClientID(originalSenderId);
-                    await _hubContext.Clients.Client(originalSendertransportId).ReceiveResponses(messageId, allResponses);
-                }
-            }*/
+                response = new ResponsePayload(messageId,request.MessagingError.ToMessagingError(), convertedReceiver);
+            }
+            else
+            {
+                response = new ResponsePayload(messageId,convertedReceiver, request.RespondedAt.ToDateTime(), request.ResponseJson);
+            }
+            
+            await _transportRouter.HandleResponseForMessage(messageId, response);
         }
         catch (Exception ex)
         {
@@ -390,18 +279,6 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         }
     }
     
-    private async Task HandleAcknowledge(Acknowledgement ack, ClientStreamContext? streamContext)
-    {
-        if (streamContext == null)
-        {
-            return;
-        }
-
-        _logger.LogDebug("Message {MessageId} acknowledged by {ClientId}", ack.MessageId, streamContext.ClientId);
-        
-        //TODO: Process acknowledgment
-        // You might want to track acknowledgments similar to responses
-    }
     
     private async Task HandleHeartbeat(Heartbeat heartbeat, IServerStreamWriter<ServerMessage> responseStream)
     {
@@ -449,41 +326,17 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
         });
     }
     
-    /*private async Task ForwardToHandlers(TransportPackageRequest request, MessageContext metadata, List<string> handlerIds)
+    private IEnumerable<MessageResponse> ConvertResponsesToGrpc(List<ResponsePayload> responses)
     {
-        // This is a simplified version - in production, you'd send through the streaming connections
-        // For now, we'll just log it
-        _logger.LogDebug("Would forward message {MessageId} to handlers: {Handlers}", metadata.MessageId, string.Join(", ", handlerIds));
-
-        List<ClientConnection> connections = new();
-        foreach (string handlerId in handlerIds)
-        {
-            var connection = _connectionTracker.GetConnection(handlerId);
-            connections.Add(connection);
-        }
-
-        foreach (var connection in connections)
-        {
-            var transportId = _connectionTracker.GetTransportIDFromClientID(connection.ClientId);
-            if (connection.TransportType == TransportTypes.SignalR)
-            {
-                await _hubContext.Clients.Client(transportId).ReceivePackage(request.ToTransportPackage(metadata));
-            }
-        }
-
-    }*/
-    
-    private IEnumerable<ResponseMessage> ConvertResponsesToGrpc(List<JsonResponse> responses)
-    {
-        return responses.Select(r => new ResponseMessage
+        return responses.Select(r => new MessageResponse
         {
             MessageId = r.MessageId.ToString(),
-            Acknowledger = new MessageReceiver
+            Receiver = new MessageReceiver
             {
-                ReceiverId = r.Acknowledger.ReceiverId,
-                Name = r.Acknowledger.Name ?? ""
+                ReceiverId = r.Receiver.ReceiverId,
+                Name = r.Receiver.Name ?? ""
             },
-            ResponseJson = GrpcJsonTransformer.TransformForGrpcClient(r.ResponseJson),
+            ResponseJson = (r.ResponseJson is not null) ? GrpcJsonTransformer.TransformForGrpcClient(r.ResponseJson) : null,
             RespondedAt = Timestamp.FromDateTime(DateTime.UtcNow)
         });
     }
@@ -498,7 +351,6 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
             var transformedMessage = new TransportPackageRequest
             {
                 SenderId = message.SenderId,
-                MessageTypeShortName = message.MessageTypeShortName,
                 MessageJson = GrpcJsonTransformer.TransformForGrpcClient(message.MessageJson)
             };
 

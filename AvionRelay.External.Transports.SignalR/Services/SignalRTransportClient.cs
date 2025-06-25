@@ -1,32 +1,37 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Text.Json;
+using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Messages;
 using HelpfulTypesAndExtensions;
+using Metalama.Framework.Aspects;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 using TypedSignalR.Client;
 
 namespace AvionRelay.External.Transports.SignalR;
 
-//TODO: Implement strongly typed Hub and Client to avoid method calls via Strings
+
 public class SignalRTransportClient : IAsyncDisposable
 {
     private HubConnection? _hubConnection;
     private readonly SignalRTransportOptions _options;
     private readonly ILogger<SignalRTransportClient> _logger;
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
-    private CancellationTokenSource? _reconnectCts;
     private IAvionRelaySignalRHubModel? _hubProxy;
     private SignalROnHandler? _onHandler;
+    private AvionRelayClient ? _client;
+
+    public MessageResponseReceivedEvent MessageResponseReceivedEvent { get; } = new();
     
     public event Func<Exception?, Task>? Disconnected;
     public event Func<Task>? Connected;
     
-    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<List<JsonResponse>>> _pendingResponses = new();
+    //private readonly ConcurrentDictionary<Guid, TaskCompletionSource<List<ResponsePayload>>> _pendingResponses = new();
+    //private readonly ConcurrentDictionary<Guid, ObservableCollection<ResponsePayload>> _pendingResponses = new();
     
     
     public HubConnectionState State => _hubConnection?.State ?? HubConnectionState.Disconnected;
-    public string ConnectionId => _options.ClientId;
     
     public SignalRTransportClient(SignalRTransportOptions options, ILogger<SignalRTransportClient> logger)
     {
@@ -54,7 +59,7 @@ public class SignalRTransportClient : IAsyncDisposable
             _hubConnection.Register<IAvionRelaySignalRClientModel>(_onHandler);
             await _onHandler.MessageResponseReceivedEvent.Subscribe<MessageResponseReceivedEventCall>(HandleMessageResponse);
                 
-            _logger.LogInformation("Connected to SignalR hub at {HubUrl} as {ClientName}", _options.HubUrl, _options.ClientName);
+            _logger.LogInformation("Connected to SignalR hub at {HubUrl}", _options.HubUrl);
                 
             if (Connected != null)
             {
@@ -74,22 +79,22 @@ public class SignalRTransportClient : IAsyncDisposable
         }
     }
 
-    public async Task RegisterClient(List<string>? supportedMessageNames = null, CancellationToken cancellationToken = default)
+    public async Task<AvionRelayClient> RegisterClient(ClientRegistrationRequest registrationRequest, CancellationToken cancellationToken = default)
     {
         // Register with the hub
-        await _hubProxy.RegisterClient(new ClientRegistration
+        ClientRegistrationResponse registrationResponse = await _hubProxy.RegisterClient(registrationRequest);
+        AvionRelayClient clientInfo = new AvionRelayClient(registrationResponse.ClientId)
         {
-            ClientId = _options.ClientId,
-            ClientName = _options.ClientName,
-            TransportType = TransportTypes.SignalR,
-            HostAddress = Helper.GetPreferredIPAddress(),
-            SupportedMessages = supportedMessageNames ?? []
-        });
+            ClientName = registrationRequest.ClientName,
+            SupportedMessages = registrationRequest.SupportedMessages,
+            Metadata = registrationRequest.Metadata
+        };
+        _client = clientInfo;
+        return clientInfo;
     }
     
     public async Task DisconnectAsync()
     {
-        await _reconnectCts?.CancelAsync();
         if (_hubConnection != null)
         {
             await _hubConnection.DisposeAsync();
@@ -106,7 +111,7 @@ public class SignalRTransportClient : IAsyncDisposable
         }
         try
         {
-            await _hubProxy.SendMessage(TransportPackage.FromPackage(package,ConnectionId));
+            await _hubProxy.SendMessage(TransportPackageExtensions.FromPackage(package, _client.ClientID.ToString()));
             return true;
         }
         catch (Exception ex)
@@ -122,65 +127,84 @@ public class SignalRTransportClient : IAsyncDisposable
     /// <param name="package"></param>
     /// <typeparam name="TResponse"></typeparam>
     /// <returns></returns>
-    public async Task<List<MessageResponse<TResponse>>> SendMessageWaitResponse<TResponse>(Package package)
+    public async Task SendMessageWaitResponse<TResponse>(Package package, List<string> targetHandlers)
     {
+        //List<ResponsePayload<TResponse>> responsePayloadList = [ ];
+        
         if (_hubConnection?.State != HubConnectionState.Connected)
         {
             _logger.LogWarning("Cannot send package - not connected");
-            return [];
+            MessagingError error = new MessagingError()
+            {
+                ErrorMessage = "Failed to send message, this client is not connected to the hub",
+                ErrorPriority = MessagePriority.High,
+                ErrorTimestamp = DateTime.UtcNow,
+                ErrorType = MessageErrorType.Other,
+                Source = "Self",
+                Suggestion = "Check the hub is running, and that the provided address is correct"
+            };
+            //responsePayloadList.Add(new ResponsePayload<TResponse>(package.WrapperID,error, new MessageReceiver("","")));
         }
 
         try
         {
-            var tcs = new TaskCompletionSource<List<JsonResponse>>();
-            _pendingResponses[package.WrapperID] = tcs;
+            //var tcs = new TaskCompletionSource<IAsyncEnumerable<ResponsePayload>>();
+            //ObservableCollection<ResponsePayload> responsePayloadCollection = new();
+            //_pendingResponses[package.WrapperID] = responsePayloadCollection;
+            var transportPackage = TransportPackageExtensions.FromPackage(package, _client.ClientID.ToString());
+            if (targetHandlers != null)
+            {
+                transportPackage.HandlerIdsOrNames.AddRange(targetHandlers);
+            }
 
-            await _hubProxy.SendMessageWaitResponse(TransportPackage.FromPackage(package,ConnectionId));
+           await _hubProxy.SendMessageWaitResponse(transportPackage);
 
             //wait for the result to be set 
-            var untypedResponses = await tcs.Task;
-            
-            // Convert MessageResponse<object> to MessageResponse<TResponse>
-            var typedResponses = new List<MessageResponse<TResponse>>();
-            foreach (var untypedResponse in untypedResponses)
+            //List<ResponsePayload> messageResponses = await tcs.Task;
+            //List<ResponsePayload<TResponse>> typedResponses = new();
+            /*foreach (ResponsePayload responsePayload in messageResponses)
             {
-                // Create a new MessageResponse<TResponse> with the properly typed response
-                var typedResponse = new MessageResponse<TResponse>
-                {
-                    MessageId = untypedResponse.MessageId,
-                    Acknowledger = untypedResponse.Acknowledger,
-                    Response =  untypedResponse.ResponseJson.ConvertTo<TResponse>(new JsonSerializerOptions(){PropertyNameCaseInsensitive = true}) // Cast the inner response
-                };
-                typedResponses.Add(typedResponse);
-            }
-            return typedResponses;
+                var typedResponse = ResponsePayload<TResponse>.FromResponsePayload(responsePayload);
+                responsePayloadList.Add(typedResponse);
+            }*/
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send package");
-            return [];
+            MessagingError error = new MessagingError()
+            {
+                ErrorMessage = ex.Message,
+                ErrorPriority = MessagePriority.High,
+                ErrorTimestamp = DateTime.UtcNow,
+                ErrorType = MessageErrorType.Other,
+                Source = ex.Source ?? "Self"
+            };
+            
+            //responsePayloadList.Add(new ResponsePayload<TResponse>(package.WrapperID, error, new MessageReceiver("","")));
         }
         finally
         {
-            _pendingResponses.TryRemove(package.WrapperID, out _);
+            //_pendingResponses.TryRemove(package.WrapperID, out _);
         }
+        //return responsePayloadList;
     }
 
     public async Task HandleMessageResponse(MessageResponseReceivedEventCall call)
     {
-        Guid messageId = call.messageId;
-        var responses = call.responses;
+        Guid messageId = call.Responses.First().MessageId;
+        List<ResponsePayload> responses = call.Responses;
         _logger.LogInformation("Received {Count} responses for message {MessageId}", responses.Count, messageId);
-                
-        if (_pendingResponses.TryRemove(messageId, out var tcs))
+        if (call.IsFinalResponse)
         {
-            tcs.TrySetResult(responses);
+            _logger.LogInformation("Got all responses for message {MessageId}", messageId);
         }
+
+        await MessageResponseReceivedEvent.RaiseEvent(call);
     }
 
-    public async Task SendMessageResponse(JsonResponse response)
+    public async Task SendMessageResponse(ResponsePayload response)
     {
-        await _hubProxy.SendResponse(response.MessageId, response);
+        await _hubProxy.SendResponse(response);
     }
     
     private HubConnection BuildHubConnection()

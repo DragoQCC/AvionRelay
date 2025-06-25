@@ -1,5 +1,4 @@
-﻿using AvionRelay.Core.Dispatchers;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace AvionRelay.External.Transports.SignalR;
 
@@ -12,8 +11,10 @@ public static class AvionRelayExternalExtensions
         configure?.Invoke(options);
         services.AddSingleton(options);
         services.AddSingleton<SignalRTransportClient>();
-        services.AddSingleton<AvionRelayMessageBus, AvionRelaySignalRMessageBus>();
+        services.AddSingleton<AvionRelayExternalBus, AvionRelaySignalRMessageBus>();
         services.AddSingleton<AvionRelaySignalRMessageBus>();
+
+        
         return services;
     }
     

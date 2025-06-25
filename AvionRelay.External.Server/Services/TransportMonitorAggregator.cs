@@ -11,7 +11,6 @@ namespace AvionRelay.External.Server.Services;
 public class TransportMonitorAggregator
 {
     private readonly IEnumerable<ITransportMonitor> _transportHubs;
-    private readonly IMessageStorage _messageStorage;
     private readonly ILogger<TransportMonitorAggregator> _logger;
     
     //These act as a way to merge the events from multiple hubs into a single event, so for example, the UI just needs to subscribe to this 1 event
@@ -20,10 +19,9 @@ public class TransportMonitorAggregator
     public MessageReceivedEvent MessageReceived = new();
     public MessageSentEvent MessageSent = new();
     
-    public TransportMonitorAggregator(IEnumerable<ITransportMonitor> transportHubs, IMessageStorage messageStorage, ILogger<TransportMonitorAggregator> logger)
+    public TransportMonitorAggregator(IEnumerable<ITransportMonitor> transportHubs, ILogger<TransportMonitorAggregator> logger)
     {
         _transportHubs = transportHubs;
-        _messageStorage = messageStorage;
         _logger = logger;
         
         // Subscribe to all transport events

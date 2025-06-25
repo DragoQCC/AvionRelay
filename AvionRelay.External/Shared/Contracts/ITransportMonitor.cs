@@ -1,8 +1,4 @@
-﻿using AvionRelay.Core.Messages;
-using HelpfulTypesAndExtensions;
-using IntercomEventing.Features.Events;
-
-namespace AvionRelay.External;
+﻿namespace AvionRelay.External;
 
 public interface ITransportMonitor
 {

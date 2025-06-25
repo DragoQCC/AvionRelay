@@ -15,24 +15,21 @@ public class SignalROnHandler : IAvionRelaySignalRClientModel
     {
         try
         {
-            Package package = transportPackage.ToPackage();
-            await MessageHandlerRegister.ProcessPackage(package);
+            Package? package = transportPackage.ToPackage();
+            if (package != null)
+            {
+                await MessageHandlerRegister.ProcessPackage(package);
+            }
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
     }
-    
 
     /// <inheritdoc />
-    public async Task SendPackage(Package package)
+    public async Task ReceiveResponses(List<ResponsePayload> responses, bool isFinalResponse = false)
     {
-    }
-
-    /// <inheritdoc />
-    public async Task ReceiveResponses(Guid messageId, List<JsonResponse> responses)
-    {
-        await MessageResponseReceivedEvent.NotifyResponseReceived(messageId, responses);
+        await MessageResponseReceivedEvent.NotifyResponseReceived(responses,isFinalResponse);
     }
 }

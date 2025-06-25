@@ -20,9 +20,6 @@
                 <MudSwitch Label="Enable Message Persistence" @bind-Value="_avionRelayConfig.EnableMessagePersistence" Color="Color.Primary" />
             </MudItem>
             <MudItem xs="12" md="6">
-                <MudNumericField Label="Max Message Retries" @bind-Value="_avionRelayConfig.RetryPolicy.MaxRetries" Min="0" Max="10" />
-            </MudItem>
-            <MudItem xs="12" md="6">
                 <MudTextField Label="Message Timeout" @bind-Value="_messageTimeoutString" HelperText="Format: HH:MM:SS" />
             </MudItem>
         </MudGrid>

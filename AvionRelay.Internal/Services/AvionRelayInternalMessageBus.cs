@@ -1,14 +1,10 @@
-﻿using System.Collections.Concurrent;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using AvionRelay.Core;
 using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Messages;
-using AvionRelay.Core.Messages.MessageTypes;
 using AvionRelay.Core.Services;
 using HelpfulTypesAndExtensions;
-using Metalama.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace AvionRelay.Internal;
 
@@ -46,7 +42,7 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
         _messagingManager = messagingManager;
         
         //Use a periodic timer to retransmit messages from storage
-        _retransmitTimer = new PeriodicTimer(_options.RetryPolicy.RetryInterval);
+        _retransmitTimer = new PeriodicTimer(_options.RetryPolicy.PriorityRetries[MessagePriority.Normal][0]);
         Task retransmitTask = Task.Run(async () =>
         {
             _logger.LogInformation("Starting retransmit timer");
@@ -86,14 +82,14 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
     }
 
     /// <inheritdoc />
-    public override async Task<MessageResponse<TResponse?>> ExecuteCommand<TCommand, TResponse>(TCommand command, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TResponse : default
+    public override async Task<MessageResponse<TResponse?>> ExecuteCommand<TCommand, TResponse>(TCommand command, string? targetHandler = null, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TResponse : default
     {
         TimeSpan _timeout = timeout ?? _options.MessageTimeout;
         return (await SendAndWaitForResponseAsync<TCommand, TResponse>(Package.Create(command), _timeout)).FirstOrDefault();
     }
 
     /// <inheritdoc />
-    public override async Task<List<MessageResponse<TResponse?>>> RequestInspection<TInspection, TResponse>(TInspection inspection, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TResponse : default
+    public override async Task<List<MessageResponse<TResponse?>>> RequestInspection<TInspection, TResponse>(TInspection inspection,List<string>? targetHandlers = null, CancellationToken? cancellationToken = null, TimeSpan? timeout = null) where TResponse : default
     {
         TimeSpan _timeout = timeout ?? _options.MessageTimeout;
         var package = Package.Create(inspection);

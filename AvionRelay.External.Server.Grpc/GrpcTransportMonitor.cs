@@ -84,7 +84,7 @@ public class GrpcTransportMonitor : ITransportMonitor
     
     public async Task RaiseMessageReceived(MessageReceivedEventCall args)
     {
-        _statistics.RecordMessageReceived(args.Package.MessageType, args.MessageSize);
+        _statistics.RecordMessageReceived(args.Package.Message.Metadata.MessageTypeName, args.MessageSize);
         await MessageReceived.NotifyMessageReceived(args.Package, args.FromClientId, args.MessageSize);
     }
     

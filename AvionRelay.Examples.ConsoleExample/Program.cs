@@ -1,14 +1,8 @@
 ﻿using AvionRelay.Core;
-using AvionRelay.Core.Aspects;
-using AvionRelay.Core.Dispatchers;
-using AvionRelay.Core.Messages;
-using AvionRelay.Core.Messages.MessageTypes;
-using AvionRelay.Core.Services;
 using AvionRelay.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using AvionRelay.Examples.SharedLibrary;
 
 namespace AvionRelay.Examples.ConsoleExample;
 

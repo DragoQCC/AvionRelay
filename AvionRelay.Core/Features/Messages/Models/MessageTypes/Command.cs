@@ -1,5 +1,4 @@
-﻿using AvionRelay.Core.Dispatchers;
-using Newtonsoft.Json;
+﻿
 
 namespace AvionRelay.Core.Messages.MessageTypes;
 
@@ -7,7 +6,7 @@ namespace AvionRelay.Core.Messages.MessageTypes;
 /// Represents a command, one-to-one, where the receiving side performs an action. <br/>
 /// Should be acknowledged and should respond.
 /// </summary>
-public abstract record Command<TResponse> : AvionRelayMessage, IRespond<TResponse>, ISingleReceiver
+public abstract class Command<TResponse> : AvionRelayMessage, IRespond<TResponse>, ISingleReceiver
 {
     protected Command()
     {

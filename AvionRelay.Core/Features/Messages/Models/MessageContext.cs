@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using AvionRelay.Core.Dispatchers;
+﻿using AvionRelay.Core.Dispatchers;
 
 namespace AvionRelay.Core.Messages;
 
@@ -43,7 +42,8 @@ public class MessageContext
     public bool IsCancelled { get;  set; }
 
     /// <summary>
-    /// Represents the retry count for a message, including the current retry attempt and the maximum allowed retries.
+    /// Represents the current retry attempt for this message <br/>
+    /// Should start at 0 and increment on each failure
     /// </summary>
     public int RetryCount { get;  set; }
     
@@ -51,6 +51,8 @@ public class MessageContext
     /// Informs the system of the base type for the message. Ex. Command, Notification, Alert, Inspection
     /// </summary>
     public BaseMessageType BaseMessageType { get;  set; }
+
+    public string MessageTypeName { get; set; } = "";
     
     /// <summary>
     /// Optional cancellation token (if you want to support message cancellation).
@@ -63,16 +65,23 @@ public record Acknowledgement
 {
     public Guid MessageId { get; set; }
     public MessageReceiver Acknowledger { get; set; }
-    public DateTimeOffset AcknowledgedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset AcknowledgedAt { get; set; }
+    
+    public Acknowledgement(Guid messageId, MessageReceiver acknowledger, DateTime handledAt)
+    {
+        MessageId = messageId;
+        Acknowledger = acknowledger;
+        AcknowledgedAt = handledAt;
+    }
     
     public Acknowledgement(Guid messageId, MessageReceiver acknowledger)
     {
         MessageId = messageId;
         Acknowledger = acknowledger;
+        AcknowledgedAt = DateTimeOffset.UtcNow;
     }
 
-    public Acknowledgement()
+    /*public Acknowledgement()
     {
-        
-    }
+    }*/
 }

@@ -1,4 +1,9 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics.Contracts;
+using AvionRelay.Core.Dispatchers;
+using AvionRelay.Core.Messages;
+using HelpfulTypesAndExtensions;
+using IntercomEventing.Features.Events;
 using Microsoft.Extensions.Logging;
 
 namespace AvionRelay.External.Server.Services;
@@ -10,96 +15,96 @@ public class ResponseTracker
 {
     private readonly ConcurrentDictionary<Guid, PendingResponse> _pendingResponses = new();
     private readonly ILogger<ResponseTracker> _logger;
+    private readonly AvionRelayExternalOptions _avionConfiguration;
     private readonly Timer _cleanupTimer;
+
+    public MessageErrorSetEvent MessageErrorSetEvent = new();
+    public MessageResponseSetEvent MessageResponseSetEvent = new();
     
-    public ResponseTracker(ILogger<ResponseTracker> logger)
+    public ResponseTracker(AvionRelayExternalOptions avionConfiguration, ILogger<ResponseTracker> logger)
     {
+        _avionConfiguration  = avionConfiguration;
         _logger = logger;
         
-        // Cleanup expired pending responses every 30 seconds
-        _cleanupTimer = new Timer(CleanupExpiredResponses, null, 
-            TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        // Cleanup expired pending responses every 5 minutes
+        _cleanupTimer = new Timer(CleanupExpiredResponses, null, TimeSpan.FromSeconds(300), TimeSpan.FromSeconds(300));
     }
     
     /// <summary>
     /// Registers a message that expects a response
     /// </summary>
-    public void TrackPendingResponse(Guid messageId, string senderConnectionId, int expectedResponseCount = 1, TimeSpan? timeout = null)
+    public void TrackPendingResponse(Guid messageId, string senderConnectionId, int desiredResponseCount)
     {
+        _logger.LogDebug("Timeout to get all responses set to {timeout}",_avionConfiguration.MessageTimeout);
+        _logger.LogWarning("Removed timeout, since it conflicts with retry policy logic, when policy waits longer then 30 seconds");
+        
+        
         var pendingResponse = new PendingResponse
         {
             MessageId = messageId,
             SenderConnectionId = senderConnectionId,
-            ExpectedResponseCount = expectedResponseCount,
-            Timeout = timeout ?? TimeSpan.FromSeconds(30),
-            CreatedAt = DateTime.UtcNow,
-            ResponseTcs = new TaskCompletionSource<List<JsonResponse>>()
+            ExpectedResponseCount = desiredResponseCount,
+            CreatedAt = DateTime.UtcNow
         };
         
         _pendingResponses[messageId] = pendingResponse;
-        
-        // Set up timeout
-        var cts = new CancellationTokenSource(pendingResponse.Timeout);
-        cts.Token.Register(() =>
-        {
-            if (_pendingResponses.TryRemove(messageId, out var response))
-            {
-                response.ResponseTcs.TrySetException(
-                    new TimeoutException($"Response timeout for message {messageId}"));
-                _logger.LogWarning("Response timeout for message {MessageId} after {Timeout}", messageId, pendingResponse.Timeout);
-            }
-        });
-        
-        pendingResponse.TimeoutCancellation = cts;
-        
         _logger.LogDebug("Tracking pending response for message {MessageId} from {Sender}", messageId, senderConnectionId);
+    }
+
+    public void AddHandlerForTrackedMessage(Guid messageId, MessageReceiver handler)
+    {
+        if(_pendingResponses.TryGetValue(messageId, out var pendingResponse))
+        {
+            pendingResponse.ExcpectedResponders.TryAdd(handler.ReceiverId, new(handler));
+        }
     }
     
     /// <summary>
     /// Records a response received for a message
     /// </summary>
-    public bool RecordResponse(JsonResponse response)
+    public void RecordResponse(Guid messageID, ResponsePayload response)
     {
-        if (!_pendingResponses.TryGetValue(response.MessageId, out var pendingResponse))
+        if (!_pendingResponses.TryGetValue(messageID, out var pendingResponse))
         {
-            _logger.LogWarning("Received response for unknown message {MessageId}", response.MessageId);
-            return false;
+            _logger.LogWarning("Received response for unknown message {MessageId}", messageID.ToString());
+            return;
         }
         pendingResponse.Responses.Add(response);
-        
-        _logger.LogDebug("Recorded response {Number}/{Expected} for message {MessageId}", pendingResponse.Responses.Count, pendingResponse.ExpectedResponseCount,response.MessageId);
-        
-        // Check if we've received all expected responses
-        if (pendingResponse.Responses.Count >= pendingResponse.ExpectedResponseCount)
+
+        ExpectedResponder? responder = null;
+        if (pendingResponse.ExcpectedResponders.TryGetValue(response.Receiver.ReceiverId, out responder) is false)
         {
-            pendingResponse.ResponseTcs.TrySetResult(pendingResponse.Responses);
-            _logger.LogDebug("All responses received for message {MessageId}", response.MessageId);
-            return true;
+            pendingResponse.ExcpectedResponders.TryGetValue(response.Receiver.Name, out responder);
+        }
+        if (responder is not null)
+        {
+            responder.SetResponse(response);
+        }
+        
+        _logger.LogDebug("Recorded response {Number}/{Expected} for message {MessageId}", pendingResponse.Responses.Count, pendingResponse.ExpectedResponseCount, messageID);
+    }
+
+    public void MessageCleanupReady(Guid messageId)
+    {
+        if (_pendingResponses.TryGetValue(messageId, out var pendingResponse))
+        {
+            if (pendingResponse.Responses.Count >= pendingResponse.ExpectedResponseCount)
+            {
+                CompleteTracking(messageId);
+            }
+        }
+    }
+
+    public bool GotAllResponsesForMessage(Guid messageId)
+    {
+        if (_pendingResponses.TryGetValue(messageId, out var pendingResponse))
+        {
+            if (pendingResponse.Responses.Count >= pendingResponse.ExpectedResponseCount)
+            {
+                return true;
+            }
         }
         return false;
-    }
-    
-    /// <summary>
-    /// Waits for all responses to a message
-    /// </summary>
-    public async Task<List<JsonResponse>> WaitForResponsesAsync(Guid messageId)
-    {
-        if (!_pendingResponses.TryGetValue(messageId, out var pendingResponse))
-        {
-            _logger.LogDebug("Waiting for responses for the following messages: {PendingIDs} ", string.Join(",",_pendingResponses.Keys.Select(k => k.ToString())));
-            throw new InvalidOperationException($"No pending response tracked for message {messageId}");
-        }
-        try
-        {
-            var responses = await pendingResponse.ResponseTcs.Task;
-            return responses;
-        }
-        catch (TimeoutException)
-        {
-            // Return partial responses on timeout
-            _logger.LogWarning("Returning {Count} partial responses for message {MessageId} after timeout",  pendingResponse.Responses.Count, messageId);
-            return pendingResponse.Responses;
-        }
     }
     
     /// <summary>
@@ -117,22 +122,30 @@ public class ResponseTracker
     /// </summary>
     public void CompleteTracking(Guid messageId)
     {
-        if (_pendingResponses.TryRemove(messageId, out var pendingResponse))
-        {
-            pendingResponse.TimeoutCancellation?.Dispose();
-            _logger.LogDebug("Completed tracking for message {MessageId}", messageId);
-        }
+        _pendingResponses.TryRemove(messageId, out _);
     }
+
     
-    /// <summary>
-    /// Cancels tracking for a message
-    /// </summary>
-    public void CancelTracking(Guid messageId)
+    public async Task SetMessagingErrorFor(TransportPackage transportPackage, MessageReceiver receiver, MessagingError error)
     {
-        if (_pendingResponses.TryRemove(messageId, out var pendingResponse))
+        if (_pendingResponses.TryGetValue(transportPackage.MessageId, out var pendingResponse))
         {
-            pendingResponse.TimeoutCancellation?.Cancel();
-            pendingResponse.ResponseTcs.TrySetCanceled();
+            string receiverIdOrName = receiver.ReceiverId.IsEmpty() ? receiver.Name : receiver.ReceiverId;
+            _logger.LogDebug("Setting error on receiver {ReceiverId} for message id: {MessageId}", receiverIdOrName, transportPackage.MessageId);
+            ExpectedResponder? responder;
+            //TODO: This is failing even after a first failure / receiver is made
+            if(pendingResponse.ExcpectedResponders.TryGetValue(receiverIdOrName, out responder) is false)
+            {
+                _logger.LogWarning("Attempted to set error on receiver {ReceiverId}, but did not find receiver is tracked", receiverIdOrName);
+                responder = new ExpectedResponder(receiver);
+                pendingResponse.ExcpectedResponders.Add(receiverIdOrName, responder);
+            }
+            responder.SetMessagingError(transportPackage.MessageId, error);
+            await MessageErrorSetEvent.AlertForMessagingErrorSet(responder,transportPackage);
+        }
+        else
+        {
+            _logger.LogWarning("Attempted to set error on message ID {MessageId}, but did not find message in tracker", transportPackage.MessageId);
         }
     }
     
@@ -146,12 +159,13 @@ public class ResponseTracker
             
         foreach (var key in expiredKeys)
         {
-            if (_pendingResponses.TryRemove(key, out var pendingResponse))
+            _pendingResponses.TryRemove(key, out var pendingResponse);
+            /*if ()
             {
                 pendingResponse.TimeoutCancellation?.Cancel();
                 pendingResponse.ResponseTcs.TrySetException(
                     new TimeoutException("Response tracking expired"));
-            }
+            }*/
         }
         
         if (expiredKeys.Any())
@@ -159,16 +173,98 @@ public class ResponseTracker
             _logger.LogDebug("Cleaned up {Count} expired response trackers", expiredKeys.Count);
         }
     }
+
+    public async IAsyncEnumerable<ExpectedResponder> TryGetFailedResponders(Guid messageID)
+    {
+        if(_pendingResponses.TryGetValue(messageID, out PendingResponse? pendingResponse))
+        {
+            foreach(ExpectedResponder failedResponder in pendingResponse.ExcpectedResponders.Values.Where(x => x.RespState is not ResponseState.Received))
+            {
+                yield return failedResponder;
+            }
+        }
+    }
     
     private class PendingResponse
     {
         public Guid MessageId { get; init; }
         public string SenderConnectionId { get; init; } = "";
+        public Dictionary<string,ExpectedResponder> ExcpectedResponders { get; init; } = new(); 
         public int ExpectedResponseCount { get; init; }
-        public TimeSpan Timeout { get; init; }
         public DateTime CreatedAt { get; init; }
-        public List<JsonResponse> Responses { get; } = new();
-        public TaskCompletionSource<List<JsonResponse>> ResponseTcs { get; init; } = new();
-        public CancellationTokenSource? TimeoutCancellation { get; set; }
+        public List<ResponsePayload> Responses { get; } = new();
+        //public TimeSpan Timeout { get; init; }
+        //public TaskCompletionSource<List<ResponsePayload>> ResponseTcs { get; init; } = new();
+        //public CancellationTokenSource? TimeoutCancellation { get; set; }
     }
 }
+
+public class ExpectedResponder
+{
+    //who are we waiting on a response for?
+    public MessageReceiver Receiver { get; private set; }
+	
+    //What is the state of getting a response back?
+    public ResponseState RespState {get; set;}
+
+    //Failure Count
+    public int FailureCount = 0;
+    
+    //TODO: What if I give this the response to return??
+    public ResponsePayload? Response { get; private set; }
+
+    public bool HasResult => RespState == ResponseState.Received; 
+
+    public ExpectedResponder(MessageReceiver receiver)
+    {
+        Receiver = receiver;
+    }
+
+    public void SetMessagingError(Guid messageId, MessagingError error)
+    {
+        Response = new(messageId,error, Receiver);
+        RespState = ResponseState.Error;
+    }
+
+    public void SetResponse(ResponsePayload response)
+    {
+        Response = response;
+    }
+}
+
+//Assumption is the default state will be it was sent and we are waiting for something else to happen now
+public enum ResponseState
+{
+    Waiting = 0,
+    Received = 1,
+    Error = 2
+}
+
+public record MessageErrorSetEvent : GenericEvent<MessageErrorSetEvent>
+{
+    public async Task AlertForMessagingErrorSet(ExpectedResponder targetClient, TransportPackage transportPackage)
+    {
+        var eventCall = new MessageErrorSetEventCall(targetClient, transportPackage);
+        await RaiseEvent(eventCall);
+    }
+
+    /// <inheritdoc />
+    override protected MessageErrorSetEventCall CreateEventCall() => null;
+}
+
+public record MessageErrorSetEventCall(ExpectedResponder targetClient, TransportPackage transportPackage) : EventCall<MessageErrorSetEvent>;
+
+
+public record MessageResponseSetEvent : GenericEvent<MessageResponseSetEvent>
+{
+    public async Task AlertForMessageResponseReceived(ResponsePayload response)
+    {
+        var eventCall = new MessageResponseSetEventCall(response);
+        await RaiseEvent(eventCall);
+    }
+    
+    /// <inheritdoc />
+    override protected EventCall<MessageResponseSetEvent> CreateEventCall() => null;
+}
+
+public record MessageResponseSetEventCall(ResponsePayload Response) : EventCall<MessageResponseSetEvent>;

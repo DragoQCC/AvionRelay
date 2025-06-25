@@ -8,11 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="HelpfulTypesAndExtensions" Version="1.8.0" />
-      <PackageReference Include="IntercomEventing" Version="1.0.0" />
-      <PackageReference Include="Metalama.Extensions.DependencyInjection" Version="2025.1.6" />
-      <PackageReference Include="Metalama.Framework" Version="2025.1.6" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
+      <PackageReference Include="IntercomEventing" Version="1.0.1" />
+      <PackageReference Include="Metalama.Extensions.DependencyInjection" Version="2025.1.9" />
+      <PackageReference Include="Metalama.Framework" Version="2025.1.9" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
     </ItemGroup>
 
     <ItemGroup>
@@ -38,7 +37,11 @@
         <InternalsVisibleTo Include="AvionRelay.Internal" />
         <InternalsVisibleTo Include="AvionRelay.External" />
         <InternalsVisibleTo Include="AvionRelay.External.Transports.SignalR" />
+        <InternalsVisibleTo Include="AvionRelay.External.Transports.Grpc" />
         <InternalsVisibleTo Include="AvionRelay.External.Hub" />
+        <InternalsVisibleTo Include="AvionRelay.External.Server" />
+        <InternalsVisibleTo Include="AvionRelay.External.Server.Grpc" />
+        <InternalsVisibleTo Include="AvionRelay.External.Server.SignalR" />
     </ItemGroup>
 
 </Project>

@@ -10,7 +10,6 @@ public static class MessageTypeHelpers
         {
             SenderId = package.SenderId,
             MessageJson = package.MessageJson,
-            MessageTypeShortName = package.MessageTypeShortName
         };
     }
     

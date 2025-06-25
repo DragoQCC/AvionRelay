@@ -15,12 +15,20 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="IntercomEventing" Version="1.0.0" />
+      <PackageReference Include="IntercomEventing" Version="1.0.1" />
       <PackageReference Include="SQLiteNetExtensions.Modern" Version="2.0.0" />
+      <PackageReference Include="System.Linq.Async" Version="6.0.3" />
+      <PackageReference Include="UnionContainers" Version="2.0.0" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.AspNetCore.Http.Abstractions">
+        <HintPath>C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\9.0.6\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>
