@@ -1,4 +1,4 @@
-﻿namespace AvionRelay.External.Hub.Components.Account.Shared.Models;
+﻿namespace AvionRelay.Examples.External.Hub.Components.Account.Shared.Models;
 
 public class ApplicationRole
 {

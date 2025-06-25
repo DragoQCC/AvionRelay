@@ -1,4 +1,4 @@
-﻿/*using AvionRelay.Core.Aspects;
+﻿using AvionRelay.Core.Aspects;
 using AvionRelay.Core.Dispatchers;
 using Metalama.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -60,8 +60,6 @@ public class ExampleMessageHandler
         //stuff and things
         _logger.LogInformation("Handling user terminated notification from first handler");
         _logger.LogInformation("User {UserName} was terminated for reason: {Reason}", notification.User.Name, notification.Reason);
-        var responder = new MessageReceiver(HandlerID.ToString(), nameof(ExampleMessageHandler));
-        await _bus.AcknowledgeMessage<UserTerminationNotification>(notification.Metadata.MessageId, responder);
     }
 }
 
@@ -102,8 +100,5 @@ public class SecondExampleMessageHandler
         //stuff and things
         _logger.LogInformation("Handling user terminated notification from second handler");
         _logger.LogInformation("User {UserName} was terminated for reason: {Reason}", notification.User.Name, notification.Reason);
-        
-        var responder = new MessageReceiver(HandlerID.ToString(), nameof(SecondExampleMessageHandler));
-        await _bus.AcknowledgeMessage<UserTerminationNotification>(notification.Metadata.MessageId, responder);
     }
-}*/
+}

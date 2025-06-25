@@ -1,4 +1,5 @@
-﻿using AvionRelay.Core.Messages;
+﻿using System.Collections.ObjectModel;
+using AvionRelay.Core.Messages;
 using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Examples.SharedLibrary.Commands;
 using AvionRelay.External;
@@ -15,7 +16,7 @@ public partial class Home
     string? targetHandler = null;
     
     private List<string>? inspectionHandlers = null;
-    private List<ResponsePayload<LanguageInspectionResponse>>? inspectionResponses = null;
+    private ObservableCollection<ResponsePayload<LanguageInspectionResponse>>? inspectionResponses = null;
 
     public Home(AvionRelayExternalBus messageBus)
     {

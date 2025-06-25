@@ -1,4 +1,7 @@
 ﻿using AvionRelay.Core;
+using AvionRelay.Core.Dispatchers;
+using AvionRelay.Core.Services;
+using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -52,7 +55,7 @@ internal class Program
 
     private static async Task RegisterKnownHandler()
     {
-        /*//get the bus and the logger
+        //get the bus and the logger
         var bus = _serviceProvider.GetRequiredService<AvionRelayMessageBus>();
         var logger = _serviceProvider.GetRequiredService<ILogger<ExampleMessageHandler>>();
         var secondLogger = _serviceProvider.GetRequiredService<ILogger<SecondExampleMessageHandler>>();
@@ -71,6 +74,6 @@ internal class Program
         await MessageHandlerRegister.RegisterHandler<AccessDeniedAlert>(receiver,handler.HandleAccessDeniedAlert);
         await MessageHandlerRegister.RegisterHandler<UserTerminationNotification>(receiver,handler.HandleUserTerminatedNotification);
         await MessageHandlerRegister.RegisterHandler<GetAllUsersInspection>(secondReceiver,secondHandler.HandleGetAllUsersInspection);
-        await MessageHandlerRegister.RegisterHandler<UserTerminationNotification>(secondReceiver,secondHandler.HandleUserTerminatedNotification);*/
+        await MessageHandlerRegister.RegisterHandler<UserTerminationNotification>(secondReceiver,secondHandler.HandleUserTerminatedNotification);
     }
 }

@@ -1,14 +1,14 @@
-﻿using AvionRelay.Core.Messages;
+﻿using System.Text.Json.Serialization;
+using AvionRelay.Core.Messages;
 
 namespace AvionRelay.Core;
 
 public class RetryPolicy
 {
+    [JsonIgnore]
     public Dictionary<MessagePriority, List<TimeSpan>> PriorityRetries { get; set; } = new();
     public int MaxRetryCount { get; set; }
-
-
-    //TODO: I might want logic here so I can have a number of retry attempts + the incrementing values
+    
     public void CreateWithDefaultPolicy()
     {
         foreach(MessagePriority priority in Enum.GetValues<MessagePriority>())
@@ -29,6 +29,12 @@ public class RetryPolicy
     {
         MaxRetryCount = maxTryCount;
         CreateWithDefaultPolicy();
+    }
+
+    [JsonConstructor]
+    private RetryPolicy()
+    {
+        
     }
 
 }

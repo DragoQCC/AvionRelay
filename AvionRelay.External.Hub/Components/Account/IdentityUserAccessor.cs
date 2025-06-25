@@ -1,8 +1,8 @@
-using AvionRelay.External.Hub.Components.Account.Shared.Models;
+using AvionRelay.Examples.External.Hub.Components.Account.Shared.Models;
 using Microsoft.AspNetCore.Identity;
 
 
-namespace AvionRelay.External.Hub.Components.Account;
+namespace AvionRelay.Examples.External.Hub.Components.Account;
 
 internal sealed class IdentityUserAccessor(UserManager<ApplicationUser> userManager, IdentityRedirectManager redirectManager)
 {

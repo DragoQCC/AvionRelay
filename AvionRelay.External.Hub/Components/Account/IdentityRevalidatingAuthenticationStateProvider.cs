@@ -1,12 +1,12 @@
 using System.Security.Claims;
-using AvionRelay.External.Hub.Components.Account.Shared.Models;
+using AvionRelay.Examples.External.Hub.Components.Account.Shared.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
 
-namespace AvionRelay.External.Hub.Components.Account;
+namespace AvionRelay.Examples.External.Hub.Components.Account;
 
 // This is a server-side AuthenticationStateProvider that revalidates the security stamp for the connected user
 // every 30 minutes an interactive circuit is connected.

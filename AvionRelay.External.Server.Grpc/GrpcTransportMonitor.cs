@@ -65,7 +65,7 @@ public class GrpcTransportMonitor : ITransportMonitor
             MessageTypeCounts = snapshot.MessageTypeStats.ToDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.Count),
-            //TODO: Figure out if I need transport and Hub stats and how they differ
+
             //StartTime = _statistics.StartTime
         };
     }

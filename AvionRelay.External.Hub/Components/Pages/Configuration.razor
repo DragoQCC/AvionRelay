@@ -1,6 +1,7 @@
 ﻿@page "/configuration"
 @using System.Text.Json
 @using AvionRelay.Core
+@using AvionRelay.External
 @using MudBlazor
 @inject IConfiguration _configuration
 @inject ISnackbar Snackbar
@@ -146,7 +147,6 @@
     private void LoadConfiguration()
     {
         _configuration.GetSection("AvionRelay").Bind(_avionRelayConfig);
-        _messageTimeoutString = _avionRelayConfig.MessageTimeout.ToString(@"hh\:mm\:ss");
         _storageProvider = _avionRelayConfig.StorageConfig.Provider;
         _connectionString = _avionRelayConfig.StorageConfig.ConnectionString;
     }
@@ -155,12 +155,6 @@
     {
         try
         {
-            // Parse timeout
-            if (TimeSpan.TryParse(_messageTimeoutString, out var timeout))
-            {
-                _avionRelayConfig.MessageTimeout = timeout;
-            }
-            
             // In a real application, you would persist these settings
             Snackbar.Add("Configuration saved successfully", Severity.Success);
         }
@@ -173,7 +167,6 @@
     private void ResetConfiguration()
     {
         _avionRelayConfig = new AvionRelayExternalOptions();
-        _messageTimeoutString = _avionRelayConfig.MessageTimeout.ToString(@"hh\:mm\:ss");
         Snackbar.Add("Configuration reset to defaults", Severity.Info);
     }
     

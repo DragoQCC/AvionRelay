@@ -1,17 +1,19 @@
 using AvionRelay.Core;
 using AvionRelay.Core.Services;
-using AvionRelay.External.Hub.Components.Account;
-using AvionRelay.External.Hub.Components.Account.Shared.Models;
+using AvionRelay.Examples.External.Hub.Components.Account;
+using AvionRelay.Examples.External.Hub.Components.Account.Shared.Models;
+using AvionRelay.External;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using AvionRelay.External.Hub.Components;
+using AvionRelay.Examples.External.Hub.Components;
 using AvionRelay.External.Server;
 using AvionRelay.External.Server.Grpc;
 using AvionRelay.External.Server.Services;
 using AvionRelay.External.Server.SignalR;
+using HelpfulTypesAndExtensions;
 using MudBlazor.Services;
 
-namespace AvionRelay.External.Hub;
+namespace AvionRelay.Examples.External.Hub;
 
 public class Program
 {
@@ -50,6 +52,11 @@ public class Program
         //get the AvionRelayOptions from the configuration
         AvionRelayExternalOptions avionRelayConfiguration =
             builder.Configuration.GetRequiredSection("AvionRelay").Get<AvionRelayExternalOptions>() ?? new AvionRelayExternalOptions();
+        
+        #if DEBUG
+        Console.WriteLine("AvionRelayConfiguration");
+        Console.WriteLine(avionRelayConfiguration.ToRecordLikeString());
+        #endif
         
         builder.Services.AddAvionRelayServerServices(avionRelayConfiguration);
         builder.ConfigureAvionRelayPortBindings(avionRelayConfiguration);

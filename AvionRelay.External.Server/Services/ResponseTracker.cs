@@ -35,10 +35,6 @@ public class ResponseTracker
     /// </summary>
     public void TrackPendingResponse(Guid messageId, string senderConnectionId, int desiredResponseCount)
     {
-        _logger.LogDebug("Timeout to get all responses set to {timeout}",_avionConfiguration.MessageTimeout);
-        _logger.LogWarning("Removed timeout, since it conflicts with retry policy logic, when policy waits longer then 30 seconds");
-        
-        
         var pendingResponse = new PendingResponse
         {
             MessageId = messageId,
@@ -133,7 +129,6 @@ public class ResponseTracker
             string receiverIdOrName = receiver.ReceiverId.IsEmpty() ? receiver.Name : receiver.ReceiverId;
             _logger.LogDebug("Setting error on receiver {ReceiverId} for message id: {MessageId}", receiverIdOrName, transportPackage.MessageId);
             ExpectedResponder? responder;
-            //TODO: This is failing even after a first failure / receiver is made
             if(pendingResponse.ExcpectedResponders.TryGetValue(receiverIdOrName, out responder) is false)
             {
                 _logger.LogWarning("Attempted to set error on receiver {ReceiverId}, but did not find receiver is tracked", receiverIdOrName);
@@ -160,12 +155,6 @@ public class ResponseTracker
         foreach (var key in expiredKeys)
         {
             _pendingResponses.TryRemove(key, out var pendingResponse);
-            /*if ()
-            {
-                pendingResponse.TimeoutCancellation?.Cancel();
-                pendingResponse.ResponseTcs.TrySetException(
-                    new TimeoutException("Response tracking expired"));
-            }*/
         }
         
         if (expiredKeys.Any())
@@ -210,7 +199,6 @@ public class ExpectedResponder
     //Failure Count
     public int FailureCount = 0;
     
-    //TODO: What if I give this the response to return??
     public ResponsePayload? Response { get; private set; }
 
     public bool HasResult => RespState == ResponseState.Received; 

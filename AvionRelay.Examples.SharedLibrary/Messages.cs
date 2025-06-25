@@ -12,7 +12,16 @@ public record UserCreated(string Result);
 /// <summary>
 /// Example command for the example.
 /// </summary>
-public class CreateUserCommand(User User) : Command<UserCreated>;
+public class CreateUserCommand : Command<UserCreated>
+{
+    public User User { get; }
+    
+    public CreateUserCommand(User user)
+    {
+        User = user;
+        Metadata.MessageTypeName = nameof(CreateUserCommand);
+    }
+}
 
 
 /// <summary>

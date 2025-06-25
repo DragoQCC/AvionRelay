@@ -129,8 +129,6 @@ public class SignalRTransportClient : IAsyncDisposable
     /// <returns></returns>
     public async Task SendMessageWaitResponse<TResponse>(Package package, List<string> targetHandlers)
     {
-        //List<ResponsePayload<TResponse>> responsePayloadList = [ ];
-        
         if (_hubConnection?.State != HubConnectionState.Connected)
         {
             _logger.LogWarning("Cannot send package - not connected");
@@ -143,14 +141,9 @@ public class SignalRTransportClient : IAsyncDisposable
                 Source = "Self",
                 Suggestion = "Check the hub is running, and that the provided address is correct"
             };
-            //responsePayloadList.Add(new ResponsePayload<TResponse>(package.WrapperID,error, new MessageReceiver("","")));
         }
-
         try
         {
-            //var tcs = new TaskCompletionSource<IAsyncEnumerable<ResponsePayload>>();
-            //ObservableCollection<ResponsePayload> responsePayloadCollection = new();
-            //_pendingResponses[package.WrapperID] = responsePayloadCollection;
             var transportPackage = TransportPackageExtensions.FromPackage(package, _client.ClientID.ToString());
             if (targetHandlers != null)
             {
@@ -158,15 +151,6 @@ public class SignalRTransportClient : IAsyncDisposable
             }
 
            await _hubProxy.SendMessageWaitResponse(transportPackage);
-
-            //wait for the result to be set 
-            //List<ResponsePayload> messageResponses = await tcs.Task;
-            //List<ResponsePayload<TResponse>> typedResponses = new();
-            /*foreach (ResponsePayload responsePayload in messageResponses)
-            {
-                var typedResponse = ResponsePayload<TResponse>.FromResponsePayload(responsePayload);
-                responsePayloadList.Add(typedResponse);
-            }*/
         }
         catch (Exception ex)
         {
@@ -179,14 +163,7 @@ public class SignalRTransportClient : IAsyncDisposable
                 ErrorType = MessageErrorType.Other,
                 Source = ex.Source ?? "Self"
             };
-            
-            //responsePayloadList.Add(new ResponsePayload<TResponse>(package.WrapperID, error, new MessageReceiver("","")));
         }
-        finally
-        {
-            //_pendingResponses.TryRemove(package.WrapperID, out _);
-        }
-        //return responsePayloadList;
     }
 
     public async Task HandleMessageResponse(MessageResponseReceivedEventCall call)

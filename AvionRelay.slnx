@@ -5,7 +5,6 @@
   </Folder>
   <Folder Name="/Core Components/">
     <Project Path="AvionRelay.Core\AvionRelay.Core.csproj" Type="Classic C#" />
-    <Project Path="AvionRelay.External.Hub\AvionRelay.External.Hub.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.External\AvionRelay.External.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.Internal\AvionRelay.Internal.csproj" Type="Classic C#" />
   </Folder>
@@ -14,6 +13,7 @@
     <Project Path="AvionRelay.Examples.ConsoleExample\AvionRelay.Examples.ConsoleExample.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.Examples.SharedLibrary\AvionRelay.Examples.SharedLibrary.csproj" Type="Classic C#" />
     <Project Path="AvionRelay.Examples.WebApp\AvionRelay.Examples.WebApp.csproj" Type="Classic C#" />
+    <Project Path="AvionRelay.External.Hub\AvionRelay.Examples.External.Hub.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/Server Transports/">
     <Project Path="AvionRelay.External.Server.Grpc\AvionRelay.External.Server.Grpc.csproj" Type="Classic C#" />

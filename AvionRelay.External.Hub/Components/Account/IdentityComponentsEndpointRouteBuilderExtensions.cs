@@ -1,8 +1,8 @@
 using System.Security.Claims;
 using System.Text.Json;
-using AvionRelay.External.Hub.Components.Account.Pages;
-using AvionRelay.External.Hub.Components.Account.Pages.Manage;
-using AvionRelay.External.Hub.Components.Account.Shared.Models;
+using AvionRelay.Examples.External.Hub.Components.Account.Shared.Models;
+using AvionRelay.Examples.External.Hub.Components.Account.Pages;
+using AvionRelay.Examples.External.Hub.Components.Account.Pages.Manage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 
-namespace AvionRelay.External.Hub.Components.Account;
+namespace AvionRelay.Examples.External.Hub.Components.Account;
 
 internal static class IdentityComponentsEndpointRouteBuilderExtensions
 {

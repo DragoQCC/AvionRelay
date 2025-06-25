@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Components;
 
-namespace AvionRelay.External.Hub.Components.Account;
+namespace AvionRelay.Examples.External.Hub.Components.Account;
 
 internal sealed class IdentityRedirectManager(NavigationManager navigationManager)
 {

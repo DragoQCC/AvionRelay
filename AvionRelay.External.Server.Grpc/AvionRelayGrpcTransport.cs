@@ -300,11 +300,9 @@ public class AvionRelayGrpcTransport : AvionRelayHub.AvionRelayHubBase, IAvionRe
             return;
         }
 
-        _logger.LogInformation("Client {ClientId} status: {Status}", 
-                               streamContext.ClientId, statusUpdate.Status);
+        _logger.LogInformation("Client {ClientId} status: {Status}",  streamContext.ClientId, statusUpdate.Status);
         
         // TODO:Update client status in tracking
-        // You might want to store this information for monitoring
     }
     
     private async Task HandleDisconnect(ClientStreamContext streamContext)

@@ -80,8 +80,4 @@ public record Acknowledgement
         Acknowledger = acknowledger;
         AcknowledgedAt = DateTimeOffset.UtcNow;
     }
-
-    /*public Acknowledgement()
-    {
-    }*/
 }

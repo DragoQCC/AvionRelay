@@ -108,9 +108,6 @@ public class TransportMonitorAggregator
 
     private async Task OnMessageReceived(MessageReceivedEventCall e)
     {
-        //TODO: Store message
-        
-        
         await MessageReceived.NotifyMessageReceived(e.Package, e.FromClientId, e.MessageSize);
     }
     

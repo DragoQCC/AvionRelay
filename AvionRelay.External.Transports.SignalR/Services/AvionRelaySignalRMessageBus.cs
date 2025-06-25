@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AvionRelay.External.Transports.SignalR;
 
-//TODO: Implement the transport client calls
+
 public class AvionRelaySignalRMessageBus : AvionRelayExternalBus
 {
     private readonly ILogger<AvionRelaySignalRMessageBus> _logger;
@@ -122,7 +122,9 @@ public class AvionRelaySignalRMessageBus : AvionRelayExternalBus
     /// <inheritdoc />
     public override async Task AcknowledgeMessage<T>(Guid messageId, MessageReceiver acknowledger)
     {
-        //await _transportClient.
+        //TODO: Finish mapping out required cals for ack
+        
+        //await _transportClient
     }
     
     public async Task HandleMessageResponse(MessageResponseReceivedEventCall call)
@@ -139,14 +141,11 @@ public class AvionRelaySignalRMessageBus : AvionRelayExternalBus
                 
             if (_pendingResponses.TryGetValue(messageId, out var taskCompletionSources))
             {
-                //TODO: Since this is called multiple times its setting a result on the first item more then once
                 foreach (var response in responses)
                 {
                     var firstNonCompleteTcs = taskCompletionSources.First(x => x.Task.IsCompleted is false);
                     firstNonCompleteTcs.TrySetResult(response);
                 }
-                /*await Task.Delay(500);
-                taskCompletionSources.RemoveRange(0,responses.Count);*/
             }
         }
         catch (Exception e)
@@ -154,22 +153,6 @@ public class AvionRelaySignalRMessageBus : AvionRelayExternalBus
             Console.WriteLine(e);
         }
     }
-    
-
-    /*private async Task HandleReceivedPackage(Package package)
-    {
-        _logger.LogDebug("Handling received package: {MessageId} of type {MessageType}", package.WrapperID, package.Message.Metadata.MessageTypeName);
-            
-        // Check if this is a response to a pending command
-        if (_pendingResponses.TryRemove(package.WrapperID, out var tcs))
-        {
-            tcs.SetResult(package);
-            return;
-        }
-        
-        // Otherwise, process through the messaging manager
-        await MessageHandlerRegister.ProcessPackage(package);
-    }*/
     
     private Task OnConnected()
     {

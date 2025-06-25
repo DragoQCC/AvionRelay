@@ -1,9 +1,9 @@
-using AvionRelay.External.Hub.Components.Account.Shared.Models;
+using AvionRelay.Examples.External.Hub.Components.Account.Shared.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 
 
-namespace AvionRelay.External.Hub.Components.Account;
+namespace AvionRelay.Examples.External.Hub.Components.Account;
 
 // Remove the "else if (EmailSender is IdentityNoOpEmailSender)" block from RegisterConfirmation.razor after updating with a real implementation.
 internal sealed class IdentityNoOpEmailSender : IEmailSender<ApplicationUser>

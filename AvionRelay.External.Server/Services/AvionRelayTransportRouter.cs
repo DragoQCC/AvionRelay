@@ -148,7 +148,6 @@ public class AvionRelayTransportRouter
         }
         catch (Exception e)
         {
-            //TODO: I may want to put this logic into a foreach so each individual receiver can propagate an error if needed
             MessagingError error = new MessagingError()
             {
                 ErrorMessage = e.Message,
@@ -207,7 +206,6 @@ public class AvionRelayTransportRouter
                 if (_handlerTracker.IsClientHandler(messageFailure.transportPackage.MessageTypeName, connection.ClientId))
                 {
                     _logger.LogDebug("Resending message to client {ClientName}", messageFailure.targetClient.Receiver.Name);
-                    //TODO: Once the client re-connected this sent a message per failure?
                     await RouteToTargets(messageFailure.transportPackage, [connection]);
                 }
                 else
@@ -245,8 +243,6 @@ public class AvionRelayTransportRouter
             {
                 throw new Exception($"No connection tracked for sender {senderConnectionId}");
             }
-            //this waits until all responses come back or a timeout happens
-            //var allResponses = await _responseTracker.WaitForResponsesAsync(eventCall.Response.MessageId);
 
             IAvionRelayTransport? transportToUse = null;
             string? transportId = null;
@@ -274,8 +270,7 @@ public class AvionRelayTransportRouter
                 _logger.LogWarning("Could not find transport ID for Client ID {ClientId}", connection.ClientId);
             }
             _logger.LogInformation("Sending response back to sender {senderID}", transportId);
-
-            //TODO: Im getting back responses again but now I need the client side to be updated to take 1+ at a time instead of thinking the list it gets is everything
+            
             var updatedresponses = _jsonTransformService.TransformResponsesForClient(connection.ClientId, [response]);
             bool isFinalResponse = _responseTracker.GotAllResponsesForMessage(response.MessageId);
             await transportToUse.RouteResponses(transportId, updatedresponses, isFinalResponse);
@@ -393,7 +388,6 @@ public class AvionRelayTransportRouter
             {
                 receivers.Add(messageReceiver);
             }
-            //TODO: Do I need to make fake receivers here so errors for invalid entries can be tracked and sent back still?
         }
         return receivers;
     }
