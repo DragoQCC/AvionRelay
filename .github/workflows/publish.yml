@@ -21,7 +21,7 @@ jobs:
           dotnet-version: '9.0.x'  # Specify your .NET SDK version
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore .\AvionRelay.sln
 
       - name: Build the project
         run: dotnet build --configuration Release --no-restore
