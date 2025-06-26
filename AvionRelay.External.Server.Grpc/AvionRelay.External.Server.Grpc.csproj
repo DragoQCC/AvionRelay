@@ -23,12 +23,8 @@
         <Protobuf Include="..\AvionRelay.External\Shared\Protos\Avionrelay.proto" GrpcServices="Server" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ItemGroup>
         <ProjectReference Include="..\AvionRelay.External.Server\AvionRelay.External.Server.csproj" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(Configuration)' == 'Release'">
-        <PackageReference Include="AvionRelay.External.Server" Version="1.0.0" />
     </ItemGroup>
 
 </Project>

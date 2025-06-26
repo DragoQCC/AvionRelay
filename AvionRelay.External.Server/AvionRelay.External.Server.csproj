@@ -14,13 +14,10 @@
     </PropertyGroup>
     
 
-    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ItemGroup>
         <ProjectReference Include="..\AvionRelay.External\AvionRelay.External.csproj" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(Configuration)' == 'Release'">
-        <PackageReference Include="AvionRelay.External" Version="1.0.0" />
-    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

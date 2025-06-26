@@ -27,13 +27,10 @@
       <PackageReference Include="UnionContainers" Version="2.0.0" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ItemGroup>
       <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
     </ItemGroup>
-    
-    <ItemGroup Condition="'$(Configuration)' == 'Release'">
-        <PackageReference Include="AvionRelay.Core" Version="1.0.0" />
-    </ItemGroup>
+
         
 
     <ItemGroup>
