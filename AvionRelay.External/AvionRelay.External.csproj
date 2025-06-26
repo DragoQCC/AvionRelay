@@ -5,6 +5,12 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>AvionRelay External</Title>
+        <Authors>Jon Owens</Authors>
+        <Description>Core library used to allow external messaging between the AvionRelay clients and server</Description>
+        <PackageProjectUrl>https://github.com/DragoQCC/AvionRelay</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,9 +27,14 @@
       <PackageReference Include="UnionContainers" Version="2.0.0" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
       <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
     </ItemGroup>
+    
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <PackageReference Include="AvionRelay.Core" Version="1.0.0" />
+    </ItemGroup>
+        
 
     <ItemGroup>
       <Reference Include="Microsoft.AspNetCore.Http.Abstractions">

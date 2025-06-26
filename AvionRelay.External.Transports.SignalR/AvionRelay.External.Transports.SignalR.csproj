@@ -5,6 +5,13 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>AvionRelay SignalR Client Transport</Title>
+        <Authors>Jon Owens</Authors>
+        <Description>Enables communication via SignalR to AvionRelay servers</Description>
+        <PackageProjectUrl> https://github.com/DragoQCC/AvionRelay
+</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,9 +21,13 @@
       <None Remove="Features\.keep" />
     </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
-      <ProjectReference Include="..\AvionRelay.External\AvionRelay.External.csproj" />
+    
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <ProjectReference Include="..\AvionRelay.External\AvionRelay.External.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <PackageReference Include="AvionRelay.External" Version="1.0.0" />
     </ItemGroup>
 
     <ItemGroup>

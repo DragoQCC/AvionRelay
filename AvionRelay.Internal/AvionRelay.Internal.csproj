@@ -5,6 +5,13 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>AvionRelay Internal Messaging</Title>
+        <Authors>Jon Owens</Authors>
+        <Description>Allows for messaging within the same .net application no external packages required</Description>
+        <PackageProjectUrl>https://github.com/DragoQCC/AvionRelay</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/DragoQCC/AvionRelay</PackageLicenseUrl>
+        <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,8 +21,12 @@
       <None Remove="Features\.keep" />
     </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <ProjectReference Include="..\AvionRelay.Core\AvionRelay.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <PackageReference Include="AvionRelay.Core" Version="1.0.0" />
     </ItemGroup>
 
     <ItemGroup>

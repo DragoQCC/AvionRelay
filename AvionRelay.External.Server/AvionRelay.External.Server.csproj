@@ -5,10 +5,21 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>AvionRelay External Server</Title>
+        <Description>Core componets for running the avion relay messaging server</Description>
+        <PackageProjectUrl>https://github.com/DragoQCC/AvionRelay</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <Authors>Jon Owens</Authors>
     </PropertyGroup>
+    
 
-    <ItemGroup>
-      <ProjectReference Include="..\AvionRelay.External\AvionRelay.External.csproj" />
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <ProjectReference Include="..\AvionRelay.External\AvionRelay.External.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <PackageReference Include="AvionRelay.External" Version="1.0.0" />
     </ItemGroup>
 
     <ItemGroup>

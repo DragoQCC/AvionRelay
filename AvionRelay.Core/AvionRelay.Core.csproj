@@ -5,6 +5,12 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>AvionRelay Core </Title>
+        <Description>Core components for the AvionRelay Messaging Library</Description>
+        <PackageProjectUrl>https://github.com/DragoQCC/AvionRelay</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <Authors>Jon Owens</Authors>
     </PropertyGroup>
 
     <ItemGroup>

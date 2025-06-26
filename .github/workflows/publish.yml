@@ -1,0 +1,44 @@
+name: Publish Package
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./AvionRelay
+    permissions:
+      contents: read  # Optional, defaults to read
+      packages: write  # Grants write permission to packages
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'  # Specify your .NET SDK version
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build the project
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack the project
+        run: dotnet pack --configuration Release --no-build -o ./packages
+        
+      - name: List packages to be published
+        run: ls -la ./packages/*.nupkg
+          
+      # Push individually for better error handling
+      - name: Publish packages individually
+        run: |
+          for package in ./packages/*.nupkg; do
+             echo "Publishing $package"
+           dotnet nuget push "$package" --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate || echo "Failed to publish $package"
+         done

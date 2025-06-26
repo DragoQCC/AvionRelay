@@ -5,14 +5,24 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>AvionRelay Server SignalR</Title>
+        <Description>Adds the required components for the AvionRelayServer to communicate over SignalR</Description>
+        <PackageProjectUrl>https://github.com/DragoQCC/AvionRelay</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <Authors>Jon Owens</Authors>
     </PropertyGroup>
 
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
+    
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <ProjectReference Include="..\AvionRelay.External.Server\AvionRelay.External.Server.csproj" />
+    </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\AvionRelay.External.Server\AvionRelay.External.Server.csproj" />
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <PackageReference Include="AvionRelay.External.Server" Version="1.0.0" />
     </ItemGroup>
 
 </Project>
