@@ -35,10 +35,9 @@ jobs:
       - name: List packages to be published
         run: ls -la ./packages/*.nupkg
           
-      
       - name: Publish packages individually # Push individually for better error handling
         run: |
           for package in ./packages/*.nupkg; do
-             echo "Publishing $package"
+           echo "Publishing $package"
            dotnet nuget push "$package" --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate || echo "Failed to publish $package"
-         done
+          done
