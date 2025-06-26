@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
     permissions:
       contents: read  # Optional, defaults to read
       packages: write  # Grants write permission to packages
@@ -21,7 +24,7 @@ jobs:
           dotnet-version: '9.0.x'  # Specify your .NET SDK version
 
       - name: Restore dependencies
-        run: dotnet restore .\AvionRelay.sln
+        run: dotnet restore
 
       - name: Build the project
         run: dotnet build --configuration Release --no-restore
