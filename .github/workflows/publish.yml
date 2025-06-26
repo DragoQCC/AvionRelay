@@ -8,16 +8,13 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./AvionRelay
     permissions:
       contents: read  # Optional, defaults to read
       packages: write  # Grants write permission to packages
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
