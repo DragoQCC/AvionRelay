@@ -28,7 +28,7 @@ jobs:
         run: dotnet build --configuration Release AvionRelay.sln
 
       - name: Pack the project
-        run: dotnet pack --configuration Release --no-build -o ./packages
+        run: dotnet pack --configuration Release --no-build -o ./packages AvionRelay.sln
         
       - name: List packages to be published
         run: ls -la ./packages/*.nupkg
