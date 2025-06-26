@@ -35,8 +35,8 @@ jobs:
       - name: List packages to be published
         run: ls -la ./packages/*.nupkg
           
-      # Push individually for better error handling
-      - name: Publish packages individually
+      
+      - name: Publish packages individually # Push individually for better error handling
         run: |
           for package in ./packages/*.nupkg; do
              echo "Publishing $package"
