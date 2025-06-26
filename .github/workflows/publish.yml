@@ -25,7 +25,7 @@ jobs:
 
 
       - name: Build the project
-        run: dotnet build --configuration Release
+        run: dotnet build --configuration Release AvionRelay.sln
 
       - name: Pack the project
         run: dotnet pack --configuration Release --no-build -o ./packages
