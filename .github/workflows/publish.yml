@@ -23,11 +23,9 @@ jobs:
         with:
           dotnet-version: '9.0.x'  # Specify your .NET SDK version
 
-      - name: Restore dependencies
-        run: dotnet restore
 
       - name: Build the project
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Release
 
       - name: Pack the project
         run: dotnet pack --configuration Release --no-build -o ./packages
