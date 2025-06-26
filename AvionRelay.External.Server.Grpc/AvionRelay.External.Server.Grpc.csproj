@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="..\AvionRelay.External\Shared\Protos\Avionrelay.proto" GrpcServices="Server" />
+        <Protobuf Include="..\AvionRelay.External\Shared\Protos\avionrelay.proto" GrpcServices="Server" />
     </ItemGroup>
 
     <ItemGroup>
