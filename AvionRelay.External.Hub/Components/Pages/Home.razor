@@ -53,8 +53,8 @@
         <MudPaper Class="pa-4" Elevation="2">
             <MudText Typo="Typo.h6" Class="mb-4">Message Activity</MudText>
             <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" 
-                     XAxisLabels="@_chartLabels" ChartOptions="@_chartOptions" 
-                     Height="300px" />
+                      XAxisLabels="@_chartLabels" ChartOptions="@_chartOptions" 
+                      Height="300px" />
         </MudPaper>
     </MudItem>
     
@@ -62,7 +62,7 @@
         <MudPaper Class="pa-4" Elevation="2">
             <MudText Typo="Typo.h6" Class="mb-4">Message Types</MudText>
             <MudChart ChartType="ChartType.Donut" ChartSeries="@_pieChartSeries" 
-                     ChartOptions="@_pieChartOptions" Height="300px" />
+                      ChartOptions="@_pieChartOptions" Height="300px" />
         </MudPaper>
     </MudItem>
     
@@ -85,6 +85,10 @@
         </MudPaper>
     </MudItem>
 </MudGrid>
+
+<AuthorizeView>
+    
+</AuthorizeView>
 
 @code {
     private Timer? _refreshTimer;

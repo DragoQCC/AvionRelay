@@ -187,7 +187,23 @@ public class SignalRTransportClient : IAsyncDisposable
     private HubConnection BuildHubConnection()
     {
         var builder = new HubConnectionBuilder()
-            .WithUrl(_options.HubUrl)
+            .WithUrl(_options.HubUrl,
+             (opts) =>
+             {
+                 opts.HttpMessageHandlerFactory = (message) =>
+                 {
+                     if (message is HttpClientHandler clientHandler)
+                     {
+                         // always verify the SSL certificate
+                         clientHandler.ServerCertificateCustomValidationCallback += (_, _, _, _) => true;
+                     }
+                     return message;
+                 };
+                 opts.WebSocketConfiguration = (webSocketOptions) =>
+                 {
+                     webSocketOptions.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+                 };
+             })
             .WithAutomaticReconnect(new CustomRetryPolicy(_options.Reconnection))
             .WithStatefulReconnect()
             .WithServerTimeout(TimeSpan.FromSeconds(120));

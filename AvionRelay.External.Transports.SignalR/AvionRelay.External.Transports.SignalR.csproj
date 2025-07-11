@@ -12,6 +12,7 @@
 </PackageProjectUrl>
         <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
+        <Version>1.1.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
