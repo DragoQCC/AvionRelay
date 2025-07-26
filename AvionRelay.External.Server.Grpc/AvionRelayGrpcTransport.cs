@@ -1,12 +1,10 @@
 ﻿using System.Collections.Concurrent;
-using AvionRelay.Core.Messages;
 using AvionRelay.External.Server.Models;
 using AvionRelay.External.Server.Services;
 using AvionRelay.External.Transports.Grpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
-using Acknowledgement = AvionRelay.External.Transports.Grpc.Acknowledgement;
 using MessageContext = AvionRelay.Core.Messages.MessageContext;
 
 namespace AvionRelay.External.Server.Grpc;

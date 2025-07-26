@@ -1,5 +1,4 @@
-﻿using AvionRelay.Core.Services;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AvionRelay.External;

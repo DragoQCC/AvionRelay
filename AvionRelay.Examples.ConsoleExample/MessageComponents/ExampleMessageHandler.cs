@@ -1,6 +1,4 @@
-﻿using AvionRelay.Core.Aspects;
-using AvionRelay.Core.Dispatchers;
-using Metalama.Extensions.DependencyInjection;
+﻿using AvionRelay.Core.Dispatchers;
 using Microsoft.Extensions.Logging;
 using AvionRelay.Examples.SharedLibrary;
 
@@ -20,7 +18,7 @@ public class ExampleMessageHandler
         _logger = logger;
     }
     
-    [AvionRelayMessageHandler]
+
     public async Task<UserCreated> HandleCreateUserCommand(CreateUserCommand command)
     {
         //stuff and things
@@ -32,7 +30,6 @@ public class ExampleMessageHandler
     }
     
     //handler for a Access Denied Alert
-    [AvionRelayMessageHandler]
     public async Task HandleAccessDeniedAlert(AccessDeniedAlert alert)
     {
         //stuff and things
@@ -42,7 +39,6 @@ public class ExampleMessageHandler
     }
     
     //handler for a get all users inspection
-    [AvionRelayMessageHandler]
     public async Task<List<User>> HandleGetAllUsersInspection(GetAllUsersInspection inspection)
     {
         //stuff and things
@@ -54,7 +50,6 @@ public class ExampleMessageHandler
     }
     
     // handler for a user terminated notification
-    [AvionRelayMessageHandler]
     public async Task HandleUserTerminatedNotification(UserTerminationNotification notification)
     {
         //stuff and things
@@ -77,7 +72,6 @@ public class SecondExampleMessageHandler
     }
 
     //handler for a get all users inspection
-    [AvionRelayMessageHandler]
     public async Task<List<User>> HandleGetAllUsersInspection(GetAllUsersInspection inspection)
     {
         //stuff and things
@@ -94,7 +88,6 @@ public class SecondExampleMessageHandler
     }
 
     // handler for a user terminated notification
-    [AvionRelayMessageHandler]
     public async Task HandleUserTerminatedNotification(UserTerminationNotification notification)
     {
         //stuff and things

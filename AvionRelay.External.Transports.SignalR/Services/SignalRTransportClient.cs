@@ -1,10 +1,5 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
-using System.Text.Json;
-using AvionRelay.Core.Dispatchers;
-using AvionRelay.Core.Messages;
+﻿using AvionRelay.Core.Messages;
 using HelpfulTypesAndExtensions;
-using Metalama.Framework.Aspects;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 using TypedSignalR.Client;
@@ -27,9 +22,6 @@ public class SignalRTransportClient : IAsyncDisposable
     public event Func<Exception?, Task>? Disconnected;
     public event Func<Task>? Connected;
     
-    //private readonly ConcurrentDictionary<Guid, TaskCompletionSource<List<ResponsePayload>>> _pendingResponses = new();
-    //private readonly ConcurrentDictionary<Guid, ObservableCollection<ResponsePayload>> _pendingResponses = new();
-    
     
     public HubConnectionState State => _hubConnection?.State ?? HubConnectionState.Disconnected;
     
@@ -37,41 +29,26 @@ public class SignalRTransportClient : IAsyncDisposable
     {
         _options = options;
         _logger = logger;
-        ConnectAsync().FireAndForget();
+        StartConnection().FireAndForget();
     }
     
-    public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
+    public async Task StartConnection(CancellationToken cancellationToken = default)
     {
         await _connectionLock.WaitAsync(cancellationToken);
         try
         {
             if (_hubConnection?.State == HubConnectionState.Connected)
             {
-                return true;
+                return;
             }
 
             _hubConnection = BuildHubConnection();
             SetupEventHandlers();
-            
-            await _hubConnection.StartAsync(cancellationToken);
-            _hubProxy = _hubConnection.CreateHubProxy<IAvionRelaySignalRHubModel>(cancellationToken);
-            _onHandler = new SignalROnHandler();
-            _hubConnection.Register<IAvionRelaySignalRClientModel>(_onHandler);
-            await _onHandler.MessageResponseReceivedEvent.Subscribe<MessageResponseReceivedEventCall>(HandleMessageResponse);
-                
-            _logger.LogInformation("Connected to SignalR hub at {HubUrl}", _options.HubUrl);
-                
-            if (Connected != null)
-            {
-                await Connected.Invoke();
-            }
-
-            return true;
+            await MonitorConnection(cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to connect to SignalR hub");
-            return false;
         }
         finally
         {
@@ -247,6 +224,42 @@ public class SignalRTransportClient : IAsyncDisposable
     {
         _logger.LogInformation("Reconnected with connection ID: {ConnectionId}", connectionId);
         return Task.CompletedTask;
+    }
+
+    private async Task MonitorConnection(CancellationToken cancellationToken = default)
+    {
+        if (_hubConnection is null)
+        {
+            return;
+        }
+        try
+        {
+            await _hubConnection.StartAsync(cancellationToken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to connect to SignalR hub, trying again in 30 seconds");
+        }
+
+        if (_hubConnection.State != HubConnectionState.Connected)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+            await MonitorConnection(cancellationToken);
+        }
+        else
+        {
+            _hubProxy = _hubConnection.CreateHubProxy<IAvionRelaySignalRHubModel>(cancellationToken);
+            _onHandler = new SignalROnHandler();
+            _hubConnection.Register<IAvionRelaySignalRClientModel>(_onHandler);
+            await _onHandler.MessageResponseReceivedEvent.Subscribe<MessageResponseReceivedEventCall>(HandleMessageResponse);
+                
+            _logger.LogInformation("Connected to SignalR hub at {HubUrl}", _options.HubUrl);
+                
+            if (Connected != null)
+            {
+                await Connected.Invoke();
+            }
+        }
     }
     
     public async ValueTask DisposeAsync()

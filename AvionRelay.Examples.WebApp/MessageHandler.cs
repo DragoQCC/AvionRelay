@@ -1,5 +1,4 @@
-﻿using AvionRelay.Core.Aspects;
-using AvionRelay.Core.Dispatchers;
+﻿using AvionRelay.Core.Dispatchers;
 using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Examples.SharedLibrary.Commands;
 using AvionRelay.Examples.SharedLibrary.Inspections;
@@ -22,7 +21,7 @@ public class MessageHandler
         Receiver = new(_bus.AvionRelayClient.ClientID.ToString(), _bus.AvionRelayClient.ClientName);
     }
     
-    [AvionRelayMessageHandler]
+
     public async Task HandleGetLanguageInspection(GetLanguageInspection languageInspection)
     {
         _logger.LogInformation("Handling GetLanguageInspection: {LanguageInspection}", languageInspection);
@@ -38,7 +37,7 @@ public class MessageHandler
         await _bus.RespondToMessage<GetLanguageInspection,LanguageInspectionResponse>(languageInspection.Metadata.MessageId, response, Receiver);
     }
     
-    [AvionRelayMessageHandler]
+
     public async Task<StatusResponse> HandleGetStatusCommand(GetStatusCommand statusCommand)
     {
         StatusResponse response = new StatusResponse();
@@ -57,14 +56,14 @@ public class MessageHandler
         return response;
     }
     
-    [AvionRelayMessageHandler]
+
     public async Task HandleAccessDeniedAlert(AccessDeniedAlert alert)
     {
         _logger.LogInformation("Handling AccessDeniedAlert, Name: {Name}, Reason: {Reason} ", alert.User.Name, alert.Reason);
         await _bus.AcknowledgeMessage<AccessDeniedAlert>(alert.Metadata.MessageId, Receiver);
     }
 
-    [AvionRelayMessageHandler]
+
     public async Task HandleUserTerminatedNotification(UserTerminationNotification notif)
     {
         _logger.LogInformation("Handling UserTerminatedNotification, Name: {Name}, Reason: {Reason}", notif.User.Name, notif.Reason);

@@ -1,7 +1,6 @@
 ﻿using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Messages;
 using AvionRelay.Core.Services;
-using Metalama.Extensions.DependencyInjection;
 using AvionRelay.Examples.SharedLibrary;
 
 
@@ -12,10 +11,14 @@ namespace AvionRelay.Examples.ConsoleExample;
 /// </summary>
 public class InternalMessageSendingExample
 {
-    [Dependency]
     private readonly AvionRelayMessageBus _bus;
-    [Dependency]
     private readonly IMessageStorage _storage;
+
+    public InternalMessageSendingExample(IMessageStorage storage, AvionRelayMessageBus bus)
+    {
+        _storage = storage;
+        _bus = bus;
+    }
     
     /// <summary>
     /// Runs the example.

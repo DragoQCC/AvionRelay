@@ -12,7 +12,7 @@
 </PackageProjectUrl>
         <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <Version>1.1.0</Version>
+        <Version>1.2.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -29,8 +29,8 @@
 
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.6" />
-      <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="9.0.6" />
+      <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
+      <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="9.0.7" />
       <PackageReference Include="TypedSignalR.Client" Version="3.6.0">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

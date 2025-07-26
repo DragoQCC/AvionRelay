@@ -1,6 +1,4 @@
-﻿using AvionRelay.Core.Messages;
-
-namespace AvionRelay.External;
+﻿namespace AvionRelay.External;
 
 /// <summary>
 /// Invoked by the hub on the client, all argument values come from the hub

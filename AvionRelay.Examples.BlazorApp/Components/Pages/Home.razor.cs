@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using AvionRelay.Core.Messages;
 using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Examples.SharedLibrary.Commands;
 using AvionRelay.External;

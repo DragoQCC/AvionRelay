@@ -11,6 +11,7 @@
         <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <Authors>Jon Owens</Authors>
+        <Version>1.2.0</Version>
     </PropertyGroup>
 
     <ItemGroup>

@@ -11,13 +11,12 @@
         <RepositoryUrl>https://github.com/DragoQCC/AvionRelay</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <Authors>Jon Owens</Authors>
+        <Version>1.2.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="IntercomEventing" Version="1.0.1" />
-      <PackageReference Include="Metalama.Extensions.DependencyInjection" Version="2025.1.9" />
-      <PackageReference Include="Metalama.Framework" Version="2025.1.9" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
     </ItemGroup>
 
     <ItemGroup>

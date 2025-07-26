@@ -1,8 +1,6 @@
 ﻿using System.Collections.Concurrent;
-using System.Text.Json;
 using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Messages;
-using AvionRelay.Core.Services;
 using HelpfulTypesAndExtensions;
 using Microsoft.Extensions.Logging;
 
@@ -28,7 +26,7 @@ public class AvionRelaySignalRMessageBus : AvionRelayExternalBus
     
     public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        await _transportClient.ConnectAsync(cancellationToken);
+        _transportClient.StartConnection(cancellationToken).FireAndForget();
     }
     
     public override async Task StopAsync()

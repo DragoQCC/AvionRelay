@@ -1,5 +1,4 @@
-﻿using AvionRelay.Core.Services;
-using AvionRelay.External.Server.Models;
+﻿using AvionRelay.External.Server.Models;
 using Microsoft.Extensions.Logging;
 
 namespace AvionRelay.External.Server.Services;
