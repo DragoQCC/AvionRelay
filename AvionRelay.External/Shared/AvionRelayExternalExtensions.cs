@@ -20,14 +20,22 @@ public static class AvionRelayExternalExtensions
         return services;
     }
     
+    /// <summary>
+    /// Starts the required SignalR connection to the Server in the background and monitors for connection issues to reestablish connections
+    /// </summary>
+    /// <param name="app"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
     public static async Task<IApplicationBuilder> UseAvionRelayExternalMessaging(this IApplicationBuilder app, AvionRelayClientOptions options)
     {
-        TransportPackageExtensions.Initialize(app.ApplicationServices);
-        var externalMessageBus = app.ApplicationServices.GetRequiredService<AvionRelayExternalBus>();
-        await externalMessageBus.StartAsync();
-        externalMessageBus.AvionRelayClient = await externalMessageBus.RegisterClient(options.Name, options.ClientVersion, options.SupportedMessageNames, options.Metadata);
-        
-        
+        _ = Task.Run(async () =>
+            {
+                TransportPackageExtensions.Initialize(app.ApplicationServices);
+                var externalMessageBus = app.ApplicationServices.GetRequiredService<AvionRelayExternalBus>();
+                await externalMessageBus.StartAsync();
+                externalMessageBus.AvionRelayClient = await externalMessageBus.RegisterClient(options.Name, options.ClientVersion, options.SupportedMessageNames, options.Metadata);
+            }
+        );
         return app;
     }
 

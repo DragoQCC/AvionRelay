@@ -26,7 +26,7 @@ public class AvionRelaySignalRMessageBus : AvionRelayExternalBus
     
     public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        _transportClient.StartConnection(cancellationToken).FireAndForget();
+        await _transportClient.StartConnection(cancellationToken);
     }
     
     public override async Task StopAsync()
