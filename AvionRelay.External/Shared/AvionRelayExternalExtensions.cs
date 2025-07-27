@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using HelpfulTypesAndExtensions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AvionRelay.External;
@@ -26,12 +27,12 @@ public static class AvionRelayExternalExtensions
     /// <param name="app"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public static async Task<IApplicationBuilder> UseAvionRelayExternalMessaging(this IApplicationBuilder app, AvionRelayClientOptions options)
+    public static IApplicationBuilder UseAvionRelayExternalMessaging(this IApplicationBuilder app, AvionRelayClientOptions options)
     {
+        TransportPackageExtensions.Initialize(app.ApplicationServices);
+        var externalMessageBus = app.ApplicationServices.GetRequiredService<AvionRelayExternalBus>();
         _ = Task.Run(async () =>
             {
-                TransportPackageExtensions.Initialize(app.ApplicationServices);
-                var externalMessageBus = app.ApplicationServices.GetRequiredService<AvionRelayExternalBus>();
                 await externalMessageBus.StartAsync();
                 externalMessageBus.AvionRelayClient = await externalMessageBus.RegisterClient(options.Name, options.ClientVersion, options.SupportedMessageNames, options.Metadata);
             }

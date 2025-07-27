@@ -44,8 +44,8 @@ public class Program
             ClientVersion = "1.0.0",
             SupportedMessageNames = []
         };
-        await app.UseAvionRelayExternalMessaging(clientOptions);
-
+        app.UseAvionRelayExternalMessaging(clientOptions);
+        Console.WriteLine("If non blocking, this message will print right after the use call");
         await app.RunAsync();
     }
 }

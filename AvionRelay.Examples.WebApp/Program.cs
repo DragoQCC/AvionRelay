@@ -50,7 +50,7 @@ public class Program
             ClientVersion = "1.0.0",
             SupportedMessageNames = supportedMessages
         };
-        await app.UseAvionRelayExternalMessaging(clientOptions);
+        app.UseAvionRelayExternalMessaging(clientOptions);
         
         await RegisterKnownHandler(app.Services);
         
