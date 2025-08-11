@@ -170,33 +170,35 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
             _logger.LogInformation("Publishing message {MessageId} of type {MessageType}", package.Message.Metadata.MessageId, messageType.Name);
             // Send the message to the channel
             await SendViaChannel(package);
-        
-            using var cts = new CancellationTokenSource(timeout ?? _options.MessageTimeout);
-        
-            //get the number of receivers
-            int receiverCount = MessageHandlerRegister.GetReceiverCount(messageType);
-            //get number of receivers that have already acknowledged
-            int acknowledgedCount = package.Message.Metadata.Acknowledgements.Count;
-        
-            while (await _responseChannel.Reader.WaitToReadAsync(cts.Token))
+
+            if (package.Message is IAcknowledge)
             {
-                if (_responseChannel.Reader.TryRead(out var response))
+                using var cts = new CancellationTokenSource(timeout ?? _options.MessageTimeout);
+            
+                //get the number of receivers
+                int receiverCount = MessageHandlerRegister.GetReceiverCount(messageType);
+                //get number of receivers that have already acknowledged
+                int acknowledgedCount = package.Message.Metadata.Acknowledgements.Count;
+            
+                while (await _responseChannel.Reader.WaitToReadAsync(cts.Token))
                 {
-                    if (response.MessageId == package.Message.Metadata.MessageId)
+                    if (_responseChannel.Reader.TryRead(out var response))
                     {
-                        _logger.LogDebug("Read acknowledgement for message {MessageId} from receiver {ReceiverId}", package.Message.Metadata.MessageId, response.Acknowledger.ReceiverId);
-                        Acknowledgement ack = new(response.MessageId, response.Acknowledger);
-                        _messagingManager.AcknowledgeMessage(package.Message,ack);
-                        acknowledgedCount = package.Message.Metadata.Acknowledgements.Count;
+                        if (response.MessageId == package.Message.Metadata.MessageId)
+                        {
+                            _logger.LogDebug("Read acknowledgement for message {MessageId} from receiver {ReceiverId}", package.Message.Metadata.MessageId, response.Acknowledger.ReceiverId);
+                            Acknowledgement ack = new(response.MessageId, response.Acknowledger);
+                            _messagingManager.AcknowledgeMessage(package.Message,ack);
+                            acknowledgedCount = package.Message.Metadata.Acknowledgements.Count;
+                        }
+                    }
+                    if (acknowledgedCount >= receiverCount)
+                    {
+                        _logger.LogDebug("All receivers have acknowledged message {MessageId}", package.Message.Metadata.MessageId);
+                        break;
                     }
                 }
-                if (acknowledgedCount >= receiverCount)
-                {
-                    _logger.LogDebug("All receivers have acknowledged message {MessageId}", package.Message.Metadata.MessageId);
-                    break;
-                }
             }
-
         }
         catch (OperationCanceledException)
         {
