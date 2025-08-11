@@ -2,6 +2,7 @@
 using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Examples.SharedLibrary.Commands;
 using AvionRelay.External;
+using Serilog;
 using GetLanguageInspection = AvionRelay.Examples.SharedLibrary.Inspections.GetLanguageInspection;
 using LanguageInspectionResponse = AvionRelay.Examples.SharedLibrary.Inspections.LanguageInspectionResponse;
 
@@ -46,7 +47,7 @@ public partial class Home
             }
             inspectionResponses.Add(inspectionResponse);
         }
-        Console.WriteLine($"Got back {inspectionResponses?.Count} responses");
+        Log.Logger.Information("Got back {InspectionResponsesCount} responses", inspectionResponses?.Count);
     }
     
     public async Task SendAccessDeniedAlert()

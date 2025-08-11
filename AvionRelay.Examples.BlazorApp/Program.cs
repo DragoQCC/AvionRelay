@@ -2,6 +2,7 @@ using AvionRelay.Examples.BlazorApp.Components;
 using AvionRelay.External;
 using AvionRelay.External.Transports.SignalR;
 using MudBlazor.Services;
+using Serilog;
 
 namespace AvionRelay.Examples.BlazorApp;
 
@@ -45,7 +46,7 @@ public class Program
             SupportedMessageNames = []
         };
         app.UseAvionRelayExternalMessaging(clientOptions);
-        Console.WriteLine("If non blocking, this message will print right after the use call");
+        Log.Logger.Information("If non blocking, this message will print right after the use call");
         await app.RunAsync();
     }
 }

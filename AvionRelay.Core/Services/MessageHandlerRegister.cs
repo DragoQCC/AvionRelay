@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using AvionRelay.Core.Dispatchers;
 using AvionRelay.Core.Messages;
+using JetBrains.Annotations;
+using Serilog;
 
 namespace AvionRelay.Core.Services;
 
@@ -28,11 +30,12 @@ public static class MessageHandlerRegister
                 return value;
             });
         }
-        Console.WriteLine($"Registered handler for {messageType}");
+        Log.Logger.Information("Registered handler for {MessageType}", messageType);
         await subscription.OnSubscribe();
 
     }
 
+    [UsedImplicitly]
     public static async Task<bool> RemoveHandler(MessageReceiver receiver)
     {
         foreach (HashSet<IAvionRelayMessageSubscription> avionRelayMessageSubscriptions in  _subscriptions.Values)
@@ -43,6 +46,7 @@ public static class MessageHandlerRegister
                 var s = avionRelayMessageSubscriptions.First(s => s.MessageReceiver.ReceiverId == receiver.ReceiverId);
                 avionRelayMessageSubscriptions.Remove(s);
                 await s.OnUnsubscribe();
+                Log.Logger.Information("Removed message subscriber");
                 return true;
             }
         }
@@ -86,16 +90,16 @@ public static class MessageHandlerRegister
 
     public static async Task ProcessPackage(Package package)
     {
-        Console.WriteLine("Processing package");
+        Log.Logger.Debug("Processing package");
         try
         {
             //get the type for the message 
             Type messageType = package.Message.GetType();
-            Console.WriteLine($"message type: {messageType}");
+            Log.Logger.Debug("message type: {MessageType}", messageType);
         
             if (TryGetHandlers(messageType, out var handlers))
             {
-                Console.WriteLine($"found handler for {messageType}");
+                Log.Logger.Debug("found handler for {MessageType}", messageType);
                 foreach (var handler in handlers ?? [])
                 {
                     try
@@ -106,18 +110,18 @@ public static class MessageHandlerRegister
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex);
+                        Log.Logger.Error(ex, "Error while processing message: {ErrorMessage}", ex.Message);
                     }
                 }
             }
             else
             {
-                Console.WriteLine($"Received package but no handlers found for type {messageType}");
+                Log.Logger.Debug("Received package but no handlers found for type {MessageType}", messageType);
             }
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Logger.Error(e, "Error while processing package: {ErrorMessage}", e.Message);
         }
     }
 

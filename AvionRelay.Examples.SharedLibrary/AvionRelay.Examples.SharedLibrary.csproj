@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <PackageReference Include="Grpc.Tools" PrivateAssets="All" Version="2.72.0" />
-        <PackageReference Include="protobuf-net" Version="3.2.52" />
+        <PackageReference Include="protobuf-net" Version="3.2.56" />
     </ItemGroup>
     
 

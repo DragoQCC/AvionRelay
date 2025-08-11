@@ -8,7 +8,7 @@ public class AvionRelayClient
     /// <summary>
     /// Unique Identifier for this client, provided by the AvionRelay Server
     /// </summary>
-    public Guid? ClientID { get; internal set; } = null;
+    public Guid ClientID { get; init; }
     
     /// <summary>
     /// Friendly name of this client, can be used by other clients to send messages to this client <br/>

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using Serilog;
 
 namespace AvionRelay.External;
 
@@ -24,7 +25,7 @@ public static class Helper
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Logger.Error(e, "Error encountered {ErrorMessage}", e.Message);
         }
         HelpfulTypesAndExtensions.DebugHelp.DebugWriteLine($"Preferred IP: {localIP}");
         return new UriBuilder(localIP).Uri;

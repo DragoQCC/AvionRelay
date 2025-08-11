@@ -2,6 +2,7 @@
 using AvionRelay.Core.Messages;
 using AvionRelay.Core.Services;
 using AvionRelay.Examples.SharedLibrary;
+using Serilog;
 
 
 namespace AvionRelay.Examples.ConsoleExample;
@@ -25,39 +26,39 @@ public class InternalMessageSendingExample
     /// </summary>
     public async Task RunExample()
     {
-        Console.WriteLine("Starting Internal Message Broker Example");
-        Console.WriteLine("=======================================\n");
+        Log.Logger.Information("Starting Internal Message Broker Example");
+        Log.Logger.Information("=======================================\n");
         
         // Send a message and wait for a response
         await SendCommand();
         // Wait for all messages to be processed
         await Task.Delay(1000);
         Console.WriteLine();
-        Console.WriteLine("=======================================\n");
+        Log.Logger.Information("=======================================\n");
         
         await PublishNotification();
         await Task.Delay(1000);
         Console.WriteLine();
-        Console.WriteLine("=======================================\n");
+        Log.Logger.Information("=======================================\n");
         
         await SendAlert();
         await Task.Delay(1000);
         Console.WriteLine();
-        Console.WriteLine("=======================================\n");
+        Log.Logger.Information("=======================================\n");
         
         await SendInspection();
         await Task.Delay(1000);
         Console.WriteLine();
-        Console.WriteLine("=======================================\n");
+        Log.Logger.Information("=======================================\n");
         
-        Console.WriteLine("All messages sent");
-        Console.WriteLine("\nInternal Message Broker Example complete!");
+        Log.Logger.Information("All messages sent");
+        Log.Logger.Information("\nInternal Message Broker Example complete!");
     }
     
     
     private async Task SendCommand()
     {
-        Console.WriteLine("\nSending a message and waiting for a response...");
+        Log.Logger.Information("\nSending a message and waiting for a response...");
         
         // Create a message
         CreateUserCommand userCommand = new CreateUserCommand(new User("Bob"));
@@ -65,13 +66,13 @@ public class InternalMessageSendingExample
         var response = await _bus.ExecuteCommand<CreateUserCommand,UserCreated>(userCommand);
         
         bool wasAcknowledged = userCommand.Metadata.State is MessageState.AcknowledgementReceived or MessageState.ResponseReceived;
-        Console.WriteLine($"Message acknowledged: {wasAcknowledged}");
-        Console.WriteLine($"Received response from: {response.Acknowledger.ReceiverId}: {response.Response}");
+        Log.Logger.Information("Message acknowledged: {WasAcknowledged}", wasAcknowledged);
+        Log.Logger.Information("Received response from: {AcknowledgerReceiverId}: {ResponseResponse}", response.Acknowledger.ReceiverId, response.Response);
     }
     
     private async Task PublishNotification()
     {
-        Console.WriteLine("\nSending a notification...");
+        Log.Logger.Information("\nSending a notification...");
         
         // Create a message
         UserTerminationNotification notification = new UserTerminationNotification(new User("Bob"), "Unauthorized access attempts, resulted in termination");
@@ -82,13 +83,13 @@ public class InternalMessageSendingExample
         //wait 1 second and then verify the message was acknowledged
         await Task.Delay(100);
         List<Acknowledgement> acks = notification.Metadata.Acknowledgements;
-        Console.WriteLine($"Notification acknowledged by {acks.Count} / {MessageHandlerRegister.GetReceiverCount(notification.GetType())}");
-        Console.WriteLine($"Acks: {string.Join("\n", acks)}");
+        Log.Logger.Information("Notification acknowledged by {AcksCount} / {GetReceiverCount}", acks.Count, MessageHandlerRegister.GetReceiverCount(notification.GetType()));
+        Log.Logger.Information("Acks: {Join}", string.Join("\n", acks));
     }
     
     private async Task SendAlert()
     {
-        Console.WriteLine("\nSending an alert...");
+        Log.Logger.Information("\nSending an alert...");
         
         // Create a message
         AccessDeniedAlert alert = new AccessDeniedAlert(new User("Bob"), "Bob is not allowed to access this system");
@@ -97,13 +98,13 @@ public class InternalMessageSendingExample
         //wait 1 second and then verify the message was acknowledged
         await Task.Delay(100);
         bool wasAcknowledged = alert.Metadata.State is MessageState.AcknowledgementReceived;
-        Console.WriteLine($"Alert acknowledged: {wasAcknowledged}");
-        Console.WriteLine($"Ack Info: {alert.Metadata.Acknowledgements.FirstOrDefault()}");
+        Log.Logger.Information("Alert acknowledged: {WasAcknowledged}", wasAcknowledged);
+        Log.Logger.Information("Ack Info: {FirstOrDefault}", alert.Metadata.Acknowledgements.FirstOrDefault());
     }
 
     private async Task SendInspection()
     {
-        Console.WriteLine("\nSending an inspection...");
+        Log.Logger.Information("\nSending an inspection...");
 
         // Create a message
         GetAllUsersInspection inspection = new GetAllUsersInspection();
@@ -111,15 +112,15 @@ public class InternalMessageSendingExample
         var responses = await _bus.RequestInspection<GetAllUsersInspection, List<User>>(inspection);
         
         List<Acknowledgement> acks = inspection.Metadata.Acknowledgements;
-        Console.WriteLine($"Inspection acknowledged by {acks.Count} / {MessageHandlerRegister.GetReceiverCount(inspection.GetType())} receivers");
+        Log.Logger.Information("Inspection acknowledged by {AcksCount} / {GetReceiverCount} receivers", acks.Count, MessageHandlerRegister.GetReceiverCount(inspection.GetType()));
         foreach (var response in responses)
         {
             //Write the acknowledgement info
-            Console.WriteLine($"Response from {response.Acknowledger.Name}:");
+            Log.Logger.Information("Response from {AcknowledgerName}:", response.Acknowledger.Name);
             //Write the response
             foreach (var user in response.Response)
             {
-                Console.WriteLine($"\t{user}");
+                Log.Logger.Information("\t{User}", user);
             }
         }
     }

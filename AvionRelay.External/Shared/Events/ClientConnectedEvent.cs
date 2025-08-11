@@ -31,7 +31,7 @@ public record ClientConnectedEvent : GenericEvent<ClientConnectedEvent>
     }
 
     /// <inheritdoc />
-    override protected ClientConnectedEventCall CreateEventCall() => new()
+    override protected ClientConnectedEventCall CreateEventCall(params object[]? args) => new()
     {
         ClientId = _clientId,
         ClientName = _clientName,

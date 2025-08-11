@@ -15,7 +15,8 @@ public class SignalRTransportClient : IAsyncDisposable
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
     private IAvionRelaySignalRHubModel? _hubProxy;
     private SignalROnHandler? _onHandler;
-    private AvionRelayClient ? _client;
+    private AvionRelayClient? _client;
+    private ClientRegistrationRequest? _registrationRequest;
 
     public MessageResponseReceivedEvent MessageResponseReceivedEvent { get; } = new();
     
@@ -59,6 +60,7 @@ public class SignalRTransportClient : IAsyncDisposable
     public async Task<AvionRelayClient> RegisterClient(ClientRegistrationRequest registrationRequest, CancellationToken cancellationToken = default)
     {
         // Register with the hub
+        _registrationRequest = registrationRequest;
         ClientRegistrationResponse registrationResponse = await _hubProxy.RegisterClient(registrationRequest);
         AvionRelayClient clientInfo = new AvionRelayClient(registrationResponse.ClientId)
         {
@@ -181,9 +183,9 @@ public class SignalRTransportClient : IAsyncDisposable
                      webSocketOptions.RemoteCertificateValidationCallback = (_, _, _, _) => true;
                  };
              })
-            .WithAutomaticReconnect(new CustomRetryPolicy(_options.Reconnection))
+            .WithAutomaticReconnect(new CustomSignalRetryPolicy(_options.Reconnection))
             .WithStatefulReconnect()
-            .WithServerTimeout(TimeSpan.FromSeconds(120));
+            .WithServerTimeout(TimeSpan.FromSeconds(1200));
         
             
         if (_logger.IsEnabled(LogLevel.Debug))
@@ -216,13 +218,17 @@ public class SignalRTransportClient : IAsyncDisposable
     
     private Task OnReconnecting(Exception? exception)
     {
-        _logger.LogInformation("Attempting to reconnect...");
+        _logger.LogWarning("Encountered an error on AvionRelay SignalR connection: {ErrorMessage} \n Attempting to reconnect...", exception?.Message);
         return Task.CompletedTask;
     }
     
     private Task OnReconnected(string? connectionId)
     {
         _logger.LogInformation("Reconnected with connection ID: {ConnectionId}", connectionId);
+        if (_client != null && _registrationRequest != null)
+        {
+            _hubProxy?.ReactivateClient(_client, _registrationRequest);
+        }
         return Task.CompletedTask;
     }
 
@@ -268,12 +274,12 @@ public class SignalRTransportClient : IAsyncDisposable
         _connectionLock.Dispose();
     }
     
-    private class CustomRetryPolicy : IRetryPolicy
+    private class CustomSignalRetryPolicy : IRetryPolicy
     {
         private readonly SignalRTransportOptions.ReconnectionPolicy _policy;
         private int _retryCount = 0;
         
-        public CustomRetryPolicy(SignalRTransportOptions.ReconnectionPolicy policy)
+        public CustomSignalRetryPolicy(SignalRTransportOptions.ReconnectionPolicy policy)
         {
             _policy = policy;
         }
@@ -286,12 +292,17 @@ public class SignalRTransportClient : IAsyncDisposable
             }
 
             _retryCount++;
-            var delay = TimeSpan.FromMilliseconds(
+            var delay = TimeSpan.FromSeconds(
                 Math.Min(
-                    _policy.InitialDelay.TotalMilliseconds * Math.Pow(2, _retryCount - 1),
-                    _policy.MaxDelay.TotalMilliseconds
+                    _policy.InitialDelay.Seconds * Math.Pow(2, _retryCount - 1),
+                    _policy.MaxDelay.Seconds
                 )
             );
+
+            if (delay < _policy.InitialDelay)
+            {
+                delay = _policy.InitialDelay;
+            }
             
             return delay;
         }

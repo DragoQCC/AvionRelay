@@ -235,7 +235,7 @@ public record MessageErrorSetEvent : GenericEvent<MessageErrorSetEvent>
     }
 
     /// <inheritdoc />
-    override protected MessageErrorSetEventCall CreateEventCall() => null;
+    override protected MessageErrorSetEventCall CreateEventCall(params object[]? args) => null;
 }
 
 public record MessageErrorSetEventCall(ExpectedResponder targetClient, TransportPackage transportPackage) : EventCall<MessageErrorSetEvent>;
@@ -250,7 +250,7 @@ public record MessageResponseSetEvent : GenericEvent<MessageResponseSetEvent>
     }
     
     /// <inheritdoc />
-    override protected EventCall<MessageResponseSetEvent> CreateEventCall() => null;
+    override protected EventCall<MessageResponseSetEvent> CreateEventCall(params object[]? args) => null;
 }
 
 public record MessageResponseSetEventCall(ResponsePayload Response) : EventCall<MessageResponseSetEvent>;

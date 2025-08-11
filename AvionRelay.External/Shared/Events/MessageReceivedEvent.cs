@@ -19,7 +19,7 @@ public record MessageReceivedEvent : GenericEvent<MessageReceivedEvent>
     }
     
     /// <inheritdoc />
-    override protected MessageReceivedEventCall CreateEventCall() => new()
+    override protected MessageReceivedEventCall CreateEventCall(params object[]? args) => new()
     {
         Package = _package,
         FromClientId = _fromClientId,

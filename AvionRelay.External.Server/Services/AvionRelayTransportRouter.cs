@@ -4,6 +4,7 @@ using AvionRelay.Core.Messages;
 using AvionRelay.External.Server.Models;
 using HelpfulTypesAndExtensions;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace AvionRelay.External.Server.Services;
 
@@ -106,7 +107,7 @@ public class AvionRelayTransportRouter
         }
         catch (Exception e)
         {
-            _logger.LogError(e,"Failed to register client, error message: {errorMessage}", e.Message);
+            _logger.LogError(e,"Failed to register client, error message: {ErrorMessage}", e.Message);
             return new ClientRegistrationResponse()
             {
                 ClientId = Guid.Empty,
@@ -114,6 +115,37 @@ public class AvionRelayTransportRouter
                 FailureMessage = null,
                 ServerVersion = "1.0"
             };
+        }
+    }
+
+    public async Task ReactivateClient(AvionRelayClient client, ClientRegistrationRequest clientRegistration, string transportId)
+    {
+        try
+        {
+            Guid clientId = client.ClientID;
+            string clientIdString = clientId.ToString();
+        
+            _connectionTracker.TrackNewConnection(clientIdString, transportId, clientRegistration.ClientName, clientRegistration.TransportType, clientRegistration.HostAddress, clientRegistration.Metadata);
+        
+            await _monitor.RaiseClientConnected(new ClientConnectedEventCall()
+            {
+                ClientId = clientIdString,
+                ClientName = clientRegistration.ClientName,
+                TransportType = clientRegistration.TransportType,
+                HostAddress = clientRegistration.HostAddress,
+                Metadata = clientRegistration.Metadata
+            });
+        
+            MessageHandlerRegistration messagesForHandler = new MessageHandlerRegistration()
+            {
+                HandlerID = clientIdString,
+                MessageNames = clientRegistration.SupportedMessages
+            };
+            await _handlerTracker.AddMessageHandler(messagesForHandler);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,"Failed to register client, error message: {ErrorMessage}", e.Message);
         }
     }
     
@@ -276,7 +308,7 @@ public class AvionRelayTransportRouter
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Logger.Error(e, "Error encountered {ErrorMessage}", e.Message);
         }
     }
 
@@ -360,7 +392,7 @@ public class AvionRelayTransportRouter
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Logger.Error(e, "Error encountered {ErrorMessage}", e.Message);
             throw;
         }
     }

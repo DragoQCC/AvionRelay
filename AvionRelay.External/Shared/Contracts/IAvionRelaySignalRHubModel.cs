@@ -14,4 +14,6 @@ public interface IAvionRelaySignalRHubModel
     Task<ClientRegistrationResponse> RegisterClient(ClientRegistrationRequest clientRegistration);
 
     public Task SendResponse(ResponsePayload response);
+    
+    public Task ReactivateClient(AvionRelayClient client, ClientRegistrationRequest registrationRequest);
 }

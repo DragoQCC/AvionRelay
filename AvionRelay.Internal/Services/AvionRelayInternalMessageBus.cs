@@ -5,6 +5,7 @@ using AvionRelay.Core.Messages;
 using AvionRelay.Core.Services;
 using HelpfulTypesAndExtensions;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace AvionRelay.Internal;
 
@@ -240,7 +241,7 @@ public class AvionRelayInternalMessageBus : AvionRelayMessageBus
             int responseCount = package.Message.Metadata.Acknowledgements.Count;
             
             // Wait for the response
-            Console.WriteLine("Waiting for response");
+            Log.Logger.Information("Waiting for response");
             
            
             

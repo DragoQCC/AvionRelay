@@ -1,5 +1,6 @@
 ﻿using AvionRelay.Core.Messages;
 using AvionRelay.Core.Services;
+using Serilog;
 
 namespace AvionRelay.External.Transports.SignalR;
 
@@ -23,7 +24,7 @@ public class SignalROnHandler : IAvionRelaySignalRClientModel
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Logger.Error(e, "Error encountered {ErrorMessage}", e.Message);
         }
     }
 

@@ -18,7 +18,7 @@ public record ClientDisconnectedEvent : GenericEvent<ClientDisconnectedEvent>
     }
     
     /// <inheritdoc />
-    override protected ClientDisconnectedEventCall CreateEventCall() => new()
+    override protected ClientDisconnectedEventCall CreateEventCall(params object[]? args) => new()
     {
         ClientId = _clientId,
         Reason = _reason,

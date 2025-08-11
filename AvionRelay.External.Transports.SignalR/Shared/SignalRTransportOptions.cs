@@ -12,7 +12,7 @@ public class SignalRTransportOptions
     
     public class ReconnectionPolicy
     {
-        public int MaxAttempts { get; set; } = 5;
+        public int MaxAttempts { get; set; } = 500;
         public TimeSpan InitialDelay { get; set; } = TimeSpan.FromSeconds(2);
         public TimeSpan MaxDelay { get; set; } = TimeSpan.FromSeconds(30);
     }

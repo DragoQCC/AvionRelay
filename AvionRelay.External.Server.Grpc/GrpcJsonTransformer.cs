@@ -2,6 +2,7 @@
 using System.Text.Json.Nodes;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Serilog;
 
 namespace AvionRelay.External.Server.Grpc;
 
@@ -68,7 +69,7 @@ public static class GrpcJsonTransformer
         {
             // If transformation fails, return original
             // Log the error in production
-            Console.WriteLine($"Failed to transform JSON for gRPC: {ex.Message}");
+            Log.Logger.Information("Failed to transform JSON for gRPC: {S}", ex.Message);
             return messageJson;
         }
     }
@@ -121,7 +122,7 @@ public static class GrpcJsonTransformer
         catch (Exception ex)
         {
             // If transformation fails, return original
-            Console.WriteLine($"Failed to transform JSON from gRPC: {ex.Message}");
+            Log.Logger.Information("Failed to transform JSON from gRPC: {S}", ex.Message);
             return messageJson;
         }
     }

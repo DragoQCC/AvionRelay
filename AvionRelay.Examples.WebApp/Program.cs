@@ -5,6 +5,7 @@ using Scalar.AspNetCore;
 using AvionRelay.Examples.SharedLibrary;
 using AvionRelay.Examples.SharedLibrary.Commands;
 using AvionRelay.External;
+using Serilog;
 using GetLanguageInspection = AvionRelay.Examples.SharedLibrary.Inspections.GetLanguageInspection;
 
 namespace AvionRelay.Examples.WebApp;
@@ -81,13 +82,13 @@ public class Program
         var messageType = typeResolver.GetType(nameof(GetStatusCommand));
         if (messageType is not null)
         {
-            Console.WriteLine($"Successfully found message type  - {messageType.Name}: {messageType.AssemblyQualifiedName}");
+            Log.Logger.Information("Successfully found message type  - {MessageTypeName}: {MessageTypeAssemblyQualifiedName}", messageType.Name, messageType.AssemblyQualifiedName);
         }
 
         var messageTypes = typeResolver.GetAllMessageTypes();
         foreach (var msgType in messageTypes)
         {
-            Console.WriteLine($"Type resolver registered: {msgType.Name} : {msgType.AssemblyQualifiedName}");
+            Log.Logger.Information("Type resolver registered: {MsgTypeName} : {MsgTypeAssemblyQualifiedName}", msgType.Name, msgType.AssemblyQualifiedName);
         }
     }
 }

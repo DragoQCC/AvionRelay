@@ -4,6 +4,7 @@ using AvionRelay.External.Server.Models;
 using AvionRelay.External.Server.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace AvionRelay.External.Server.SignalR;
 
@@ -89,7 +90,7 @@ public class AvionRelaySignalRTransport : Hub<IAvionRelaySignalRClientModel>, IA
     {
         try
         {
-            Console.WriteLine("Received message send request");
+            Log.Logger.Information("Received message send request");
             //get the size of the message.Package.Message in bytes
             int messageSize = Encoding.UTF8.GetByteCount(package.MessageJson);
             var metadata = JsonExtensions.TryGetJsonSubsectionAs<MessageContext>(package.MessageJson, "metadata", new(){PropertyNameCaseInsensitive = true});
@@ -101,7 +102,7 @@ public class AvionRelaySignalRTransport : Hub<IAvionRelaySignalRClientModel>, IA
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Logger.Error(e, "Error sending message {ErrorMessage}", e.Message);
         }
     }
 
@@ -135,10 +136,15 @@ public class AvionRelaySignalRTransport : Hub<IAvionRelaySignalRClientModel>, IA
         await _transportRouter.HandleResponseForMessage(response.MessageId,response);
     }
 
-    
     /// <inheritdoc />
     public async Task<ClientRegistrationResponse> RegisterClient(ClientRegistrationRequest clientRegistration)
     {
         return await _transportRouter.TrackNewTransportClient(clientRegistration, Context.ConnectionId);
+    }
+    
+    /// <inheritdoc />
+    public async Task ReactivateClient(AvionRelayClient client, ClientRegistrationRequest registrationRequest)
+    {
+        await _transportRouter.ReactivateClient(client, registrationRequest, Context.ConnectionId);
     }
 }

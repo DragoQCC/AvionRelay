@@ -12,7 +12,7 @@ public record MessageResponseReceivedEvent : GenericEvent<MessageResponseReceive
     }
     
     /// <inheritdoc />
-    override protected MessageResponseReceivedEventCall CreateEventCall() => null;
+    override protected MessageResponseReceivedEventCall CreateEventCall(params object[]? args) => null;
 }
 
 public record MessageResponseReceivedEventCall(List<ResponsePayload> Responses, bool IsFinalResponse = false) : EventCall<MessageResponseReceivedEvent>;

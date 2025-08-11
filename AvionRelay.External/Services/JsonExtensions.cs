@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
+using Serilog;
 
 namespace AvionRelay.External;
 
@@ -77,7 +78,7 @@ public static class JsonExtensions
     {
         object deserializeObject = JsonSerializer.Deserialize(jsonString, typeof(object))!;
         string prettyPrint = JsonSerializer.Serialize(deserializeObject, new JsonSerializerOptions { WriteIndented = true });
-        Console.WriteLine(prettyPrint);
+        Log.Logger.Information(prettyPrint);
     }
     
     
