@@ -8,6 +8,7 @@ using AvionRelay.External;
 using Serilog;
 using GetLanguageInspection = AvionRelay.Examples.SharedLibrary.Inspections.GetLanguageInspection;
 
+
 namespace AvionRelay.Examples.WebApp;
 
 public class Program
